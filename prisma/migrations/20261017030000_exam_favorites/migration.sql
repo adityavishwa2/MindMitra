@@ -1,0 +1,1 @@
+ALTER TABLE "User" ADD COLUMN "favoriteExams" TEXT[] DEFAULT ARRAY[]::TEXT[];

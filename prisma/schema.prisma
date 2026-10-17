@@ -1,0 +1,277 @@
+generator client {
+ provider = "prisma-client-js"
+ engineType = "client"
+}
+datasource db {
+ provider = "postgresql"
+ url = env("DATABASE_URL")
+}
+model User {
+ id String @id @default(cuid())
+ name String?
+ email String? @unique
+ emailVerified DateTime?
+ image String?
+ role String @default("STUDENT")
+ language String @default("en")
+ onboarded Boolean @default(false)
+ dailyGoal Int @default(20)
+ targetExams String[] @default([])
+ favoriteExams String[] @default([])
+ reminder Boolean @default(false)
+ targetDate DateTime?
+ createdAt DateTime @default(now())
+ accounts Account[]
+ sessions Session[]
+ practices PracticeSession[]
+ bookmarks Bookmark[]
+ tasks StudyTask[]
+ games GameSession[]
+ watches WatchSession[]
+ videoBookmarks VideoBookmark[]
+ reports VideoReport[]
+}
+model Account {
+ id String @id @default(cuid())
+ userId String
+ type String
+ provider String
+ providerAccountId String
+ refresh_token String? @db.Text
+ access_token String? @db.Text
+ expires_at Int?
+ token_type String?
+ scope String?
+ id_token String? @db.Text
+ session_state String?
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ @@unique([provider,providerAccountId])
+}
+model Session {
+ id String @id @default(cuid())
+ sessionToken String @unique
+ userId String
+ expires DateTime
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+}
+model VerificationToken {
+ identifier String
+ token String @unique
+ expires DateTime
+ @@unique([identifier,token])
+}
+model Authority {
+ id String @id @default(cuid())
+ name String @unique
+ exams Exam[]
+}
+model Exam {
+ id String @id @default(cuid())
+ slug String @unique
+ name String
+ category String
+ state String?
+ subjects String[]
+ authorityId String
+ authority Authority @relation(fields:[authorityId],references:[id])
+ papers Paper[]
+}
+model SourceDocument {
+ id String @id @default(cuid())
+ title String
+ url String
+ checksum String
+ permission String @default("PENDING")
+ permissionEvidence String
+ createdAt DateTime @default(now())
+ papers Paper[]
+ @@unique([url,checksum])
+}
+model Paper {
+ id String @id @default(cuid())
+ examId String
+ exam Exam @relation(fields:[examId],references:[id])
+ year Int
+ stage String
+ shift String
+ date DateTime?
+ title String
+ status String @default("AWAITING_VERIFICATION")
+ sourceId String
+ source SourceDocument @relation(fields:[sourceId],references:[id])
+ marks Float @default(1)
+ penalty Float @default(0)
+ durationMinutes Int @default(60)
+ questions Question[]
+ practices PracticeSession[]
+ reviews VerificationReview[]
+ @@unique([examId,year,stage,shift])
+ @@index([examId,status,year])
+}
+model Question {
+ id String @id @default(cuid())
+ paperId String
+ paper Paper @relation(fields:[paperId],references:[id],onDelete:Cascade)
+ number Int
+ text String @db.Text
+ type String @default("MCQ")
+ options String[]
+ subject String
+ topic String
+ language String @default("en")
+ sourcePage Int
+ verified Boolean @default(false)
+ explanation String? @db.Text
+ keys AnswerKey[]
+ sessionQuestions SessionQuestion[]
+ answers StudentAnswer[]
+ bookmarks Bookmark[]
+ @@unique([paperId,number])
+}
+model AnswerKey {
+ id String @id @default(cuid())
+ questionId String
+ question Question @relation(fields:[questionId],references:[id],onDelete:Cascade)
+ version Int
+ answer Int?
+ status String
+ reference String
+ createdAt DateTime @default(now())
+ @@unique([questionId,version])
+}
+model VerificationReview {
+ id String @id @default(cuid())
+ paperId String
+ paper Paper @relation(fields:[paperId],references:[id],onDelete:Cascade)
+ reviewerId String
+ decision String
+ note String
+ createdAt DateTime @default(now())
+}
+model PracticeSession {
+ id String @id @default(cuid())
+ userId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ paperId String
+ paper Paper @relation(fields:[paperId],references:[id])
+ mode String @default("untimed")
+ current Int @default(0)
+ elapsed Int @default(0)
+ lastActiveAt DateTime @default(now())
+ startedAt DateTime @default(now())
+ submittedAt DateTime?
+ result Json?
+ questions SessionQuestion[]
+ answers StudentAnswer[]
+ @@index([userId,startedAt])
+}
+model SessionQuestion {
+ id String @id @default(cuid())
+ sessionId String
+ session PracticeSession @relation(fields:[sessionId],references:[id],onDelete:Cascade)
+ questionId String
+ question Question @relation(fields:[questionId],references:[id])
+ position Int
+ keyVersion Int?
+ answer Int?
+ keyStatus String
+ snapshot Json
+ @@unique([sessionId,questionId])
+ @@unique([sessionId,position])
+}
+model StudentAnswer {
+ id String @id @default(cuid())
+ sessionId String
+ session PracticeSession @relation(fields:[sessionId],references:[id],onDelete:Cascade)
+ questionId String
+ question Question @relation(fields:[questionId],references:[id])
+ selected Int?
+ reviewed Boolean @default(false)
+ text String? @db.Text
+ @@unique([sessionId,questionId])
+}
+model Bookmark {
+ userId String
+ questionId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ question Question @relation(fields:[questionId],references:[id],onDelete:Cascade)
+ @@id([userId,questionId])
+}
+model StudyTask {
+ id String @id @default(cuid())
+ userId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ title String
+ dueDate DateTime
+ done Boolean @default(false)
+ @@index([userId,dueDate])
+}
+model GameSession {
+ id String @id @default(cuid())
+ userId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ game String
+ score Int
+ duration Int
+ createdAt DateTime @default(now())
+ @@index([userId,game])
+}
+model Video {
+ id String @id @default(cuid())
+ title String
+ creator String
+ youtubeId String @unique
+ category String
+ approved Boolean @default(false)
+ watches WatchSession[]
+ bookmarks VideoBookmark[]
+ reports VideoReport[]
+}
+model VideoBookmark {
+ userId String
+ videoId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ video Video @relation(fields:[videoId],references:[id],onDelete:Cascade)
+ @@id([userId,videoId])
+}
+model WatchSession {
+ id String @id @default(cuid())
+ userId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ videoId String
+ video Video @relation(fields:[videoId],references:[id])
+ seconds Int
+ createdAt DateTime @default(now())
+ @@index([userId,createdAt])
+}
+model VideoReport {
+ id String @id @default(cuid())
+ userId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ videoId String
+ video Video @relation(fields:[videoId],references:[id])
+ reason String
+ createdAt DateTime @default(now())
+}
+model AuditLog {
+ id String @id @default(cuid())
+ actorId String
+ action String
+ targetId String
+ detail Json
+ createdAt DateTime @default(now())
+}
+model ImportJob {
+ id String @id @default(cuid())
+ actorId String
+ status String
+ checksum String
+ error String?
+ paperId String?
+ createdAt DateTime @default(now())
+}
+model RateBucket {
+ key String @id
+ count Int
+ expiresAt DateTime
+}
