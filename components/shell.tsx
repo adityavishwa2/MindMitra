@@ -23,6 +23,8 @@ import {
   ShieldCheck,
   UserRound,
   WifiOff,
+  Upload,
+  Trophy,
 } from "lucide-react";
 import { useState, useEffect, type ReactNode } from "react";
 import { useLocale } from "./providers";
@@ -32,6 +34,8 @@ const links = [
   ["/games", "Brain Arcade", "ब्रेन आर्केड", Gamepad2],
   ["/watch", "Learn Shorts", "लर्न शॉर्ट्स", Play],
   ["/progress", "My progress", "मेरी प्रगति", ChartNoAxesCombined],
+  ["/contribute", "Contribute papers", "प्रश्नपत्र योगदान", Upload],
+  ["/leaderboard", "Contributors", "योगदानकर्ता", Trophy],
   ["/planner", "Study planner", "अध्ययन योजना", CalendarDays],
 ] as const;
 export function Brand() {
@@ -186,6 +190,13 @@ export function AppShell({
             >
               {language === "en" ? "अ हिंदी" : "English"}
             </button>
+            <Link
+              href="/settings"
+              className="icon-button"
+              aria-label="Settings"
+            >
+              <Settings size={20} />
+            </Link>
             <ThemeToggle />
             <Link href="/profile" className="avatar" aria-label="Open profile">
               {name[0]?.toUpperCase() ?? "M"}

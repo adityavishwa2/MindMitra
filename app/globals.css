@@ -817,6 +817,7 @@ details p {
   min-height: 100vh;
 }
 .sidebar {
+  overflow-y: auto;
   background: var(--surface);
   border-right: 1px solid var(--line);
   position: fixed;

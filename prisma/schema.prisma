@@ -21,6 +21,8 @@ model User {
  reminder Boolean @default(false)
  targetDate DateTime?
  createdAt DateTime @default(now())
+ contributorAlias String? @unique
+ contributions Contribution[]
  accounts Account[]
  sessions Session[]
  practices PracticeSession[]
@@ -75,6 +77,7 @@ model Exam {
  authorityId String
  authority Authority @relation(fields:[authorityId],references:[id])
  papers Paper[]
+ contributions Contribution[]
 }
 model SourceDocument {
  id String @id @default(cuid())
@@ -104,6 +107,7 @@ model Paper {
  durationMinutes Int @default(60)
  questions Question[]
  practices PracticeSession[]
+ contribution Contribution?
  reviews VerificationReview[]
  @@unique([examId,year,stage,shift])
  @@index([examId,status,year])
@@ -274,4 +278,31 @@ model RateBucket {
  key String @id
  count Int
  expiresAt DateTime
+}
+
+model Contribution {
+ id String @id @default(cuid())
+ userId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ examId String
+ exam Exam @relation(fields:[examId],references:[id])
+ year Int
+ stage String
+ shift String
+ title String
+ sourceUrl String
+ permissionEvidence String @db.Text
+ checksum String @unique
+ fileName String
+ pdf Bytes?
+ payload Json?
+ status String @default("PENDING")
+ reviewerId String?
+ reviewNote String?
+ reviewedAt DateTime?
+ paperId String? @unique
+ paper Paper? @relation(fields:[paperId],references:[id])
+ createdAt DateTime @default(now())
+ @@index([status,createdAt])
+ @@index([userId,createdAt])
 }

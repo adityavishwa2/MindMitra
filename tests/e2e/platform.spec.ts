@@ -378,11 +378,15 @@ test("planner persists and is isolated between users", async ({
     .fill("SYNTHETIC TEST ONLY: revise ratios");
   await page.getByRole("button", { name: "Add to my plan +" }).click();
   await expect(
-    page.getByText("SYNTHETIC TEST ONLY: revise ratios", { exact: true }),
+    page
+      .getByRole("main")
+      .getByText("SYNTHETIC TEST ONLY: revise ratios", { exact: true }),
   ).toBeVisible();
   await page.reload();
   await expect(
-    page.getByText("SYNTHETIC TEST ONLY: revise ratios", { exact: true }),
+    page
+      .getByRole("main")
+      .getByText("SYNTHETIC TEST ONLY: revise ratios", { exact: true }),
   ).toBeVisible();
   const task = await db.studyTask.findFirstOrThrow({ where: { userId: uid } });
   await login(context, otherToken);

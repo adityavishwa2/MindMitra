@@ -1,3 +1,4 @@
+import { InstallApp } from "@/components/install-app";
 import { Text } from "@/components/translation";
 import { Heading } from "@/components/ui";
 import { AccountActions } from "@/components/forms";
@@ -11,7 +12,17 @@ export default function Page() {
         title="Make yourself comfortable."
         description="Manage your account, appearance, and privacy."
       />
-      <div className="grid-2">
+      <p>
+        <Link className="text-link" href="/contribute">
+          Contribute an exam paper →
+        </Link>
+        {" · "}
+        <Link className="text-link" href="/leaderboard">
+          Contributor leaderboard →
+        </Link>
+      </p>
+      <InstallApp />
+      <div className="grid-2 section-gap">
         <div className="card">
           <h3>
             <Text value="A little change of scenery" />

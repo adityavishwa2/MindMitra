@@ -13,6 +13,8 @@ export default async function Layout({
           ["", "Overview"],
           ["/exams", "Examinations"],
           ["/imports", "Import papers"],
+          ["/contributions", "Contributions"],
+          ["/users", "Users"],
           ["/questions", "Verification queue"],
           ["/coverage", "Coverage"],
           ["/videos", "Videos"],

@@ -42,3 +42,9 @@ This is a working development release, not completion of every item in the [orig
 - [ ] Expand accessibility audits and device testing, establish performance budgets, external security review, live provider tests, and operational backup restoration drills.
 
 Do not publish claims of complete historical coverage, verified real content, full bilingual support, exact watch-time tracking, or production readiness based on this release.
+
+## Moderated community contributions
+
+Implemented: private PDF/JSON uploads with source metadata and reuse confirmation, per-member quotas, file duplicate checks, admin review/rejection/revocation, verified publication into practice, and an optional public-alias leaderboard crediting only approved published papers. PDFs require human conversion and source/key verification; this is not automatic OCR-to-quiz publication. Uploaded originals are stored in PostgreSQL with owner/admin download controls.
+
+Admin Overview now reports registered/new/active users, contributors, contribution statuses and learning totals; Users provides a private searchable directory. Settings includes a browser-supported PWA installation action and platform-specific instructions. See `contributions-and-launch.md` for local upgrade, administrator access, storage, privacy and hosting steps. This addition has not created a public deployment.

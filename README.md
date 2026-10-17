@@ -31,6 +31,10 @@ Windows: run these commands in PowerShell with Node LTS and Docker Desktop runni
 
 Only `openid email profile` permissions are requested. There is no password login or development authentication bypass. Existing sessions are database-backed, expire after 30 days, and can be revoked together from Settings. HTTPS enables secure cookies in production. See [authentication and security](docs/security.md).
 
+## Administration, community contributions and hosting
+
+See [the owner and launch guide](docs/contributions-and-launch.md) for admin access, user statistics, moderated PDF/JSON contributions, the approval-based leaderboard, Windows updates without Docker, PWA installation, and Vercel/managed PostgreSQL deployment. Community submissions stay private until an administrator approves and publishes verified questions.
+
 ## Commands
 
 | Command                                                         | Purpose                                                        |

@@ -7,6 +7,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import { InstallPromptCapture } from "@/components/pwa-install-context";
 import { SessionProvider } from "next-auth/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 const LocaleContext = createContext({
@@ -45,7 +46,7 @@ export function Providers({ children }: { children: ReactNode }) {
             t: (en, hi) => (language === "hi" ? hi : en),
           }}
         >
-          {children}
+          <InstallPromptCapture>{children}</InstallPromptCapture>
         </LocaleContext.Provider>
       </QueryClientProvider>
     </SessionProvider>

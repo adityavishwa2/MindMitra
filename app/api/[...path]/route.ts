@@ -1,3 +1,4 @@
+import { importPaper } from "@/lib/paper-import";
 import { toCsv } from "@/lib/csv";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
@@ -68,6 +69,24 @@ export async function GET(req: NextRequest, ctx: Ctx) {
         reminder: true,
         targetDate: true,
         reports: true,
+        contributorAlias: true,
+        contributions: {
+          select: {
+            id: true,
+            examId: true,
+            year: true,
+            stage: true,
+            shift: true,
+            title: true,
+            sourceUrl: true,
+            permissionEvidence: true,
+            checksum: true,
+            status: true,
+            reviewNote: true,
+            createdAt: true,
+            paperId: true,
+          },
+        },
         createdAt: true,
         tasks: true,
         practices: { include: { answers: true } },
@@ -146,6 +165,22 @@ export async function POST(req: NextRequest, ctx: Ctx) {
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
       );
       return ok({ saved: d.saved });
+    }
+    if (action === "contributor-profile") {
+      const d = z
+        .object({
+          alias: z
+            .string()
+            .trim()
+            .max(30)
+            .regex(/^[a-zA-Z0-9 _-]*$/),
+        })
+        .parse(body);
+      await db.user.update({
+        where: { id: user.id },
+        data: { contributorAlias: d.alias || null },
+      });
+      return ok({ saved: true });
     }
     if (action === "language") {
       const d = z.object({ language: z.enum(["en", "hi"]) }).parse(body);
@@ -453,47 +488,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
         .digest("hex");
       return ok(
         await db.$transaction(async (tx) => {
-          const src = await tx.sourceDocument.upsert({
-            where: {
-              url_checksum: { url: d.source.url, checksum: d.source.checksum },
-            },
-            create: d.source,
-            update: {},
-          });
-          const p = await tx.paper.create({
-            data: {
-              examId: d.examId,
-              year: d.year,
-              stage: d.stage,
-              shift: d.shift,
-              title: d.title,
-              sourceId: src.id,
-              marks: d.marks,
-              penalty: d.penalty,
-              durationMinutes: d.durationMinutes,
-              questions: {
-                create: d.questions.map((q) => ({
-                  number: q.number,
-                  text: q.text,
-                  type: q.type,
-                  options: q.options,
-                  subject: q.subject,
-                  topic: q.topic,
-                  language: q.language,
-                  sourcePage: q.sourcePage,
-                  explanation: q.explanation,
-                  keys: {
-                    create: {
-                      version: 1,
-                      answer: q.answer,
-                      status: q.keyStatus,
-                      reference: q.keyReference,
-                    },
-                  },
-                })),
-              },
-            },
-          });
+          const p = await importPaper(tx, d);
           await tx.importJob.create({
             data: {
               actorId: user.id,

@@ -19,8 +19,20 @@ export default function Page() {
       <p>
         Profiles are private by default. You can export your data and
         permanently delete your account in Settings. Administrators review
-        educational content; there are no public student leaderboards or
-        messaging.
+        educational content. Learning scores are private; an optional
+        contributor leaderboard displays your chosen alias and approved paper
+        totals, never your email. You can change or clear your alias on the
+        contribution page.
+      </p>
+      <h2>Paper contributions</h2>
+      <p>
+        Submitted files, source details and permission evidence are visible to
+        you and administrators. Approved questions are published for practice.
+        Review notes are shared with the uploader. Deleting your account removes
+        your uploads and leaderboard credit; published papers retain their
+        separate source and verification records. Administrators can view
+        account information and aggregate learning activity to operate the
+        service.
       </p>
       <h2>Providers and cookies</h2>
       <p>
