@@ -9,6 +9,7 @@ export default async function Page() {
     by: ["userId"],
     where: {
       status: "APPROVED",
+      adminUpload: false,
       paper: { status: "PUBLISHED" },
       user: { contributorAlias: { not: null } },
     },

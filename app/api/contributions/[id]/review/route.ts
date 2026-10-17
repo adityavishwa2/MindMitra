@@ -54,7 +54,7 @@ export async function POST(
     await db.$transaction(
       async (tx) => {
         const c = await tx.contribution.findUniqueOrThrow({ where: { id } });
-        if (c.userId === admin.id)
+        if (c.userId === admin.id && !c.adminUpload)
           throw Error(
             "You cannot review your own contribution; use the admin import workflow for your papers",
           );

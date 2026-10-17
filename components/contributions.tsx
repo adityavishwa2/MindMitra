@@ -6,9 +6,11 @@ import { MAX_CONTRIBUTION_BYTES } from "@/lib/contributions";
 export function ContributionForm({
   exams,
   alias,
+  adminUpload = false,
 }: {
   exams: { id: string; name: string }[];
   alias: string;
+  adminUpload?: boolean;
 }) {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -32,7 +34,9 @@ export function ContributionForm({
       const result = await res.json();
       if (!res.ok) throw Error(result.error);
       setMessage(
-        "Submitted for review. Your paper is private until approval; points are awarded after publication.",
+        adminUpload
+          ? "PDF saved privately. Open it in the PDF inbox below to prepare verified questions and publish."
+          : "Submitted for review. Your paper is private until approval; points are awarded after publication.",
       );
       form.reset();
       router.refresh();
@@ -44,11 +48,16 @@ export function ContributionForm({
   }
   return (
     <form onSubmit={submit} className="form-grid">
-      <h2>Share a previous-year paper</h2>
+      {adminUpload && <input type="hidden" name="adminUpload" value="yes" />}
+      <h2>
+        {adminUpload
+          ? "Upload a PDF question paper"
+          : "Share a previous-year paper"}
+      </h2>
       <p>
-        Choose the exact exam, year, stage and shift. Upload a PDF or a
-        structured paper JSON, up to 2 MB. A PDF is reviewed and converted into
-        practice questions before publication.
+        {adminUpload
+          ? "Select the exam and upload a PDF up to 2 MB. It is stored privately in your PDF inbox. Uploading does not automatically extract questions or publish a practice quiz."
+          : "Choose the exact exam, year, stage and shift. Upload a PDF or structured paper JSON, up to 2 MB. A PDF is reviewed and converted into practice questions before publication."}
       </p>
       <label>
         Examination
@@ -123,7 +132,11 @@ export function ContributionForm({
         <input
           name="file"
           type="file"
-          accept=".pdf,.json,application/pdf,application/json"
+          accept={
+            adminUpload
+              ? ".pdf,application/pdf"
+              : ".pdf,.json,application/pdf,application/json"
+          }
           required
         />
       </label>
@@ -131,25 +144,29 @@ export function ContributionForm({
         <input type="checkbox" name="rightsConfirmed" value="yes" required />I
         have permission to submit this material for review and reuse.
       </label>
-      <label>
-        Public contributor alias (optional)
-        <input
-          name="publicAlias"
-          defaultValue={alias}
-          maxLength={30}
-          pattern="[a-zA-Z0-9 _-]*"
-          placeholder="e.g. ExamHelper"
-        />
-      </label>
-      <p className="muted">
-        An alias opts you into the leaderboard. Leave it blank to stay off the
-        leaderboard. Your email is never displayed there. Each approved,
-        published paper earns 10 points. Pending, rejected, duplicate and
-        revoked papers earn no points. Maximum 5 submissions per day and 10
-        awaiting review.
-      </p>
+      {!adminUpload && (
+        <>
+          <label>
+            Public contributor alias (optional)
+            <input
+              name="publicAlias"
+              defaultValue={alias}
+              maxLength={30}
+              pattern="[a-zA-Z0-9 _-]*"
+              placeholder="e.g. ExamHelper"
+            />
+          </label>
+          <p className="muted">
+            An alias opts you into the leaderboard. Leave it blank to stay off
+            the leaderboard. Your email is never displayed there. Each approved,
+            published paper earns 10 points. Pending, rejected, duplicate and
+            revoked papers earn no points. Maximum 5 submissions per day and 10
+            awaiting review.
+          </p>
+        </>
+      )}
       <Button disabled={busy}>
-        {busy ? "Uploading…" : "Submit for review"}
+        {busy ? "Uploading…" : adminUpload ? "Upload PDF" : "Submit for review"}
       </Button>
       <p role="status">{message}</p>
     </form>
@@ -159,10 +176,12 @@ export function ContributionReview({
   id,
   status,
   payload,
+  credit = true,
 }: {
   id: string;
   status: string;
   payload: string;
+  credit?: boolean;
 }) {
   const [text, setText] = useState(payload);
   const [note, setNote] = useState("");
@@ -185,7 +204,9 @@ export function ContributionReview({
       if (!res.ok) throw Error(result.error);
       setMessage(
         decision === "APPROVE"
-          ? "Paper published and contributor credited."
+          ? credit
+            ? "Paper published and contributor credited."
+            : "Paper published for practice."
           : "Review saved.",
       );
       router.refresh();

@@ -472,3 +472,93 @@ test("PWA settings offer installation when browser supports the prompt", async (
   for (const icon of manifest.icons)
     expect((await page.request.get(icon.src)).ok()).toBe(true);
 });
+
+test("administrator can upload and publish own PDF without leaderboard credit", async ({
+  page,
+  context,
+}) => {
+  await login(context, student.token);
+  expect(
+    (
+      await page.request.post("/api/contributions", {
+        headers,
+        multipart: { adminUpload: "yes" },
+      })
+    ).status(),
+  ).toBe(403);
+  await login(context, admin.token);
+  const alias = `Admin-${run.slice(0, 8)}`;
+  expect(
+    (
+      await page.request.post("/api/contributor-profile", {
+        headers,
+        data: { alias },
+      })
+    ).ok(),
+  ).toBe(true);
+  await page.goto("/admin/imports");
+  const main = page.getByRole("main");
+  await main.getByLabel("Examination", { exact: true }).selectOption(examId);
+  await main.getByLabel("Year", { exact: true }).fill("2025");
+  await main.getByLabel("Paper title").fill("SYNTHETIC ADMIN PDF TEST ONLY");
+  await main.getByLabel("Stage", { exact: true }).fill("TEST ONLY");
+  await main.getByLabel("Shift", { exact: true }).fill("ADMIN-PDF");
+  await main
+    .getByLabel("Original source URL")
+    .fill(paper("ADMIN-PDF").source.url);
+  await main
+    .getByLabel("Reuse permission and source evidence")
+    .fill("Synthetic fixture authorized for testing");
+  const pdf = Buffer.from("%PDF-1.4\nSYNTHETIC ADMIN PDF TEST ONLY\n%%EOF");
+  await main
+    .getByLabel("Paper file", { exact: true })
+    .setInputFiles({
+      name: "admin-paper.pdf",
+      mimeType: "application/pdf",
+      buffer: pdf,
+    });
+  await main.getByText("I have permission to submit").click();
+  await main.getByRole("button", { name: "Upload PDF", exact: true }).click();
+  await expect(main.getByRole("status").first()).toContainText(
+    "PDF saved privately",
+  );
+  expect(
+    (await db.user.findUniqueOrThrow({ where: { id: admin.id } }))
+      .contributorAlias,
+  ).toBe(alias);
+  const c = await db.contribution.findFirstOrThrow({
+    where: { userId: admin.id, adminUpload: true, shift: "ADMIN-PDF" },
+  });
+  expect(c.status).toBe("PENDING");
+  expect(await db.paper.count({ where: { examId, shift: "ADMIN-PDF" } })).toBe(
+    0,
+  );
+  await main
+    .getByRole("link", { name: "SYNTHETIC ADMIN PDF TEST ONLY →" })
+    .click();
+  const reviewed = paper(
+    "ADMIN-PDF",
+    createHash("sha256").update(pdf).digest("hex"),
+  );
+  await main
+    .getByLabel("Reviewed question JSON", { exact: true })
+    .fill(JSON.stringify(reviewed));
+  await main
+    .getByLabel("Review note (shared with contributor)")
+    .fill("Verified the administrator PDF, permission and answer key.");
+  await main.getByRole("button", { name: "Approve and publish" }).click();
+  await expect(main.getByRole("status")).toContainText(
+    "Paper published for practice",
+  );
+  const approved = await db.contribution.findUniqueOrThrow({
+    where: { id: c.id },
+  });
+  expect(
+    (await db.paper.findUniqueOrThrow({ where: { id: approved.paperId! } }))
+      .status,
+  ).toBe("PUBLISHED");
+  await page.goto("/leaderboard");
+  await expect(
+    main.getByRole("cell", { name: alias, exact: true }),
+  ).toHaveCount(0);
+});

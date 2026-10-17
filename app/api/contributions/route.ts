@@ -45,6 +45,12 @@ export async function POST(req: NextRequest) {
     const form = await new Response(Buffer.concat(chunks), {
       headers: { "Content-Type": req.headers.get("content-type") ?? "" },
     }).formData();
+    const adminUpload = form.get("adminUpload") === "yes";
+    if (adminUpload && user.role !== "ADMIN")
+      return NextResponse.json(
+        { error: "Administrator access required" },
+        { status: 403 },
+      );
     const d = contributionInput.parse(Object.fromEntries(form.entries()));
     const file = form.get("file");
     if (
@@ -55,6 +61,8 @@ export async function POST(req: NextRequest) {
       throw Error("Choose a PDF or JSON file up to 2 MB");
     const bytes = Buffer.from(await file.arrayBuffer());
     const pdf = file.name.toLowerCase().endsWith(".pdf");
+    if (adminUpload && !pdf)
+      throw Error("Choose a PDF for the admin PDF inbox");
     if (pdf && bytes.subarray(0, 5).toString() !== "%PDF-")
       throw Error("File is not a PDF");
     if (!pdf && !file.name.toLowerCase().endsWith(".json"))
@@ -93,13 +101,15 @@ export async function POST(req: NextRequest) {
         })
       )
         throw Error("This exam paper is already registered");
-      await tx.user.update({
-        where: { id: user.id },
-        data: { contributorAlias: publicAlias || null },
-      });
+      if (!adminUpload)
+        await tx.user.update({
+          where: { id: user.id },
+          data: { contributorAlias: publicAlias || null },
+        });
       return tx.contribution.create({
         data: {
           ...metadata,
+          adminUpload,
           userId: user.id,
           checksum,
           fileName: file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-120),

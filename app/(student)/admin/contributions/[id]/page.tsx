@@ -15,6 +15,7 @@ export default async function Page({
     where: { id },
     select: {
       id: true,
+      adminUpload: true,
       userId: true,
       title: true,
       status: true,
@@ -43,7 +44,10 @@ export default async function Page({
         Back to queue
       </Link>
       <section className="card section-gap">
-        <p>Submitted by: {c.user.email}</p>
+        <p>
+          {c.adminUpload ? "Admin PDF upload" : "Community submission"} ·
+          Submitted by: {c.user.email}
+        </p>
         <p>Exam ID: {c.examId}</p>
         <p>
           Submitted source:{" "}
@@ -69,7 +73,7 @@ export default async function Page({
           be marked accordingly.
         </p>
         {c.reviewNote && <p>Latest review: {c.reviewNote}</p>}
-        {c.userId === admin.id ? (
+        {c.userId === admin.id && !c.adminUpload ? (
           <p>
             You cannot review your own submission. Use Import papers for your
             own content.
@@ -78,6 +82,7 @@ export default async function Page({
           <ContributionReview
             id={c.id}
             status={c.status}
+            credit={!c.adminUpload}
             payload={c.payload ? JSON.stringify(c.payload, null, 2) : ""}
           />
         )}
