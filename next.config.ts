@@ -21,16 +21,7 @@ const config: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: `default-src 'self'; script-src 'self' 'unsafe-inline' ${development ? "'unsafe-eval'" : ""}; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.googleusercontent.com; font-src 'self'; media-src 'self' blob:; connect-src 'self' ${development ? "ws:" : ""}; frame-src https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'self' https://accounts.google.com; frame-ancestors 'none'`,
-          },
-        ],
-      },
-      {
-        source: "/:path(watch/create|admin/videos/upload)",
-        headers: [
-          {
-            key: "Permissions-Policy",
-            value: "camera=(self), microphone=(self), geolocation=()",
+            value: `default-src 'self'; script-src 'self' 'unsafe-inline' ${development ? "'unsafe-eval'" : ""}; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.googleusercontent.com; font-src 'self'; media-src 'self' blob:; connect-src 'self' ${development ? "ws:" : ""}; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self' https://accounts.google.com; frame-ancestors 'none'`,
           },
         ],
       },

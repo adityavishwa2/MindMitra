@@ -9,7 +9,6 @@ export function AdminNavigation() {
         {[
           ["/admin", "Start here"],
           ["/admin/contributions", "Review papers"],
-          ["/admin/videos", "Review videos"],
           ["/admin/imports", "Upload a paper"],
         ].map(([href, label]) => (
           <Link

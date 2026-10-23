@@ -25,7 +25,7 @@ export default function Home() {
             <Text value="Explore exams" />
           </Link>
           <Link href="/games">
-            <Text value="Brain Arcade" />
+            <Text value="Mind Break" />
           </Link>
         </nav>
         <div className="row">
@@ -133,7 +133,7 @@ export default function Home() {
                   <Text value="A happier study break" />
                 </strong>
                 <small>
-                  <Text value="Recharge in the Brain Arcade" />
+                  <Text value="Recharge in the Mind Break" />
                 </small>
               </div>
             </div>
@@ -224,7 +224,7 @@ export default function Home() {
                 <Text value="Flip a card, spot a pattern, or merge a number. A little play can refresh your day." />
               </p>
               <span className="text-link">
-                <Text value="Enter Brain Arcade" />
+                <Text value="Enter Mind Break" />
                 <ArrowUpRight size={18} />
               </span>
             </Link>
@@ -308,7 +308,7 @@ export default function Home() {
               ],
               [
                 "Can I try a brain game first?",
-                "Absolutely. The Brain Arcade is open to explore. Sign in to save your game results to your account.",
+                "Absolutely. The Mind Break is open to explore. New Mind Break games run on your device; classic game results can be saved when signed in.",
               ],
               [
                 "Will my progress be public?",

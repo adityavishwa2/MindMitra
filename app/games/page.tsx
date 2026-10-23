@@ -12,8 +12,8 @@ export default async function Page({
     <>
       <Heading
         eyebrow="A LITTLE PLAY. A FRESH PERSPECTIVE."
-        title="Brain Arcade"
-        description="Recharge your mind. Find your flow. No pressure, just a little joy."
+        title="Mind Break"
+        description="Small games. A lighter mind. Play with touch, mouse or keyboard—no downloads needed."
       />
       <div className="welcome-panel" style={{ marginBottom: 26 }}>
         <div>

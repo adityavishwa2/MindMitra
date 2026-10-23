@@ -10,7 +10,6 @@ import {
   BookOpen,
   LayoutDashboard,
   Gamepad2,
-  Play,
   ChartNoAxesCombined,
   CalendarDays,
   Settings,
@@ -31,8 +30,7 @@ import { useLocale } from "./providers";
 const links = [
   ["/dashboard", "Home", "होम", LayoutDashboard],
   ["/exams", "Exam preparation", "परीक्षा तैयारी", BookOpen],
-  ["/games", "Brain Arcade", "ब्रेन आर्केड", Gamepad2],
-  ["/watch", "Learn Shorts", "लर्न शॉर्ट्स", Play],
+  ["/games", "Mind Break", "मन का विराम", Gamepad2],
   ["/progress", "My progress", "मेरी प्रगति", ChartNoAxesCombined],
   ["/contribute", "Contribute papers", "प्रश्नपत्र योगदान", Upload],
   ["/leaderboard", "Contributors", "योगदानकर्ता", Trophy],

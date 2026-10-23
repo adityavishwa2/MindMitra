@@ -2999,3 +2999,224 @@ details p {
   font: inherit;
   cursor: pointer;
 }
+
+/* Browser-only Mind Break games */
+.mind-break {
+  max-width: 740px;
+  margin: auto;
+}
+.break-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin: 16px 0;
+}
+.break-toolbar button,
+.break-toolbar a {
+  min-height: 44px;
+}
+.break-rules {
+  padding: 24px;
+  border-radius: 24px;
+  background: #e9eee2;
+  border: 1px solid #ccd8bc;
+  touch-action: pan-y;
+}
+.break-rules p {
+  min-height: 75px;
+}
+.break-paused {
+  opacity: 0.45;
+}
+.break-score {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #f6f2e6;
+  border-radius: 18px;
+  margin: 16px 0;
+  color: #253e35;
+}
+.break-board {
+  width: 100%;
+  max-width: 345px;
+  margin: auto;
+  max-height: 460px;
+  display: block;
+  touch-action: none;
+}
+.break-controls {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.break-controls label {
+  flex: 1;
+  min-width: 130px;
+}
+.break-controls input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+}
+.mind-break .button {
+  background: #245844;
+  color: white;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+.mind-break .button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 0 #c5d5ad;
+}
+.mind-break [aria-pressed="true"] {
+  outline: 3px solid #407758;
+}
+.bridge-scene {
+  position: relative;
+  aspect-ratio: 420/280;
+  background: linear-gradient(#b9e4ed, #e9f5df);
+  border-radius: 24px;
+  overflow: hidden;
+  background-size: 100% 100%;
+}
+.bridge-sky {
+  position: absolute;
+  inset: 0;
+  padding: 8px 12%;
+  font-size: 32px;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+}
+.bridge-sky span {
+  color: #e6ae35;
+}
+.bridge-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.bridge-grid {
+  position: absolute;
+  left: 0;
+  top: 0.893%;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  width: 100%;
+  height: 98.214%;
+}
+.bridge-node {
+  padding: 0;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.bridge-node:after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  background: #608c8d;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px #608c8d;
+}
+.bridge-node.anchor:after {
+  background: #c74d3a;
+  width: 16px;
+  height: 16px;
+}
+.bridge-node.selected:after {
+  background: #ffc337;
+  box-shadow: 0 0 0 5px #fff;
+}
+.bridge-node.road:after {
+  border-color: #355544;
+}
+.bridge-node:focus-visible {
+  outline: 3px solid #274e37;
+  outline-offset: -4px;
+}
+.football-board {
+  position: relative;
+  max-width: 420px;
+  margin: auto;
+  aspect-ratio: 300/380;
+  touch-action: none;
+  background: #eff6ee;
+  border-radius: 24px;
+}
+.football-board svg {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+}
+.football-grid {
+  position: absolute;
+  left: 3.333%;
+  top: 2.632%;
+  width: 93.333%;
+  height: 94.737%;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(9, 1fr);
+}
+.football-grid button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 50%;
+}
+.football-grid button:after {
+  content: "";
+  width: 5px;
+  height: 5px;
+  background: #73917c;
+  border-radius: 50%;
+}
+.football-grid button.football-available:after {
+  width: 16px;
+  height: 16px;
+  background: #f5c957;
+  box-shadow: 0 0 0 5px #f5c95744;
+}
+.football-grid button:focus-visible {
+  outline: 3px solid #1b6354;
+}
+.mind-break select {
+  padding: 8px;
+  border-radius: 10px;
+}
+.game-card {
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+.game-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 14px 30px #234d3418;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mind-break *,
+  .game-card {
+    transition: none !important;
+    animation: none !important;
+  }
+}

@@ -23,7 +23,6 @@ export default async function Page() {
     activeLearners,
     questions,
     contributions,
-    pendingVideos,
     pendingLibrary,
   ] = await Promise.all([
     db.exam.count(),
@@ -46,7 +45,6 @@ export default async function Page() {
         OR: [
           { practices: { some: { lastActiveAt: { gte: week } } } },
           { games: { some: { createdAt: { gte: week } } } },
-          { watches: { some: { createdAt: { gte: week } } } },
         ],
       },
     }),
@@ -54,7 +52,6 @@ export default async function Page() {
       where: { verified: true, paper: { status: "PUBLISHED" } },
     }),
     db.contribution.count(),
-    db.videoSubmission.count({ where: { status: "PENDING" } }),
     db.paper.count({
       where: { status: "AWAITING_VERIFICATION", contribution: { is: null } },
     }),
@@ -76,20 +73,15 @@ export default async function Page() {
           </p>
           <strong>Upload a PDF</strong>
         </Link>
-        {/* Full navigation applies the recorder camera/microphone policy. */}
-        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-        <a
-          href="/admin/videos/upload"
-          className="studio-create-card studio-create-video"
-        >
-          <span>02 · LEARN SHORTS</span>
-          <h2>Share a moment of clarity ↗</h2>
+        <Link href="/games" className="studio-create-card studio-create-video">
+          <span>02 · MIND BREAK</span>
+          <h2>A lighter mind, a fresh start ↗</h2>
           <p>
-            Upload a video → watch and complete the review → publish to the
-            learning feed.
+            Browser games with instructions, practice rounds and touch controls.
+            No uploads or moderation queue.
           </p>
-          <strong>Upload a video</strong>
-        </a>
+          <strong>Explore the games</strong>
+        </Link>
       </section>
       <section aria-label="Awaiting approval" className="section-gap">
         <h2>What needs your review?</h2>
@@ -104,18 +96,6 @@ export default async function Page() {
             <p>
               Open a PDF, check each question and choose correct answers, then
               publish to practice.
-            </p>
-          </Link>
-          <Link
-            href="/admin/videos"
-            aria-label="Review videos →"
-            className="card admin-action"
-          >
-            <span className="badge">{pendingVideos} awaiting review</span>
-            <h3>Review videos →</h3>
-            <p>
-              Watch the lesson, complete the five checks and approve it for
-              Learn Shorts.
             </p>
           </Link>
         </div>
@@ -160,9 +140,9 @@ export default async function Page() {
           ))}
         </div>
         <p className="muted">
-          Active learners counts distinct users with recorded practice, game or
-          video activity in the last 7 days. These are account and learning
-          records, not visitor or page-view analytics.
+          Active learners counts distinct users with recorded practice or game
+          activity in the last 7 days. These are account and learning records,
+          not visitor or page-view analytics.
         </p>
         <section className="card">
           <h3>

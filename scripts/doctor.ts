@@ -2,7 +2,6 @@ import { resolveDocumentTool, type DocumentTool } from "../lib/document-tools";
 import "dotenv/config";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { resolveMediaTool } from "../lib/media-tools";
 import { Pool } from "pg";
 const exec = promisify(execFile);
 let failed = false;
@@ -17,26 +16,11 @@ async function main() {
     "Node.js 22 or later",
     Number(process.versions.node.split(".")[0]) >= 22,
   );
-  for (const binary of [
-    "pdfinfo",
-    "pdftotext",
-    "pdftoppm",
-    "tesseract",
-    "ffprobe",
-    "ffmpeg",
-  ]) {
+  for (const binary of ["pdfinfo", "pdftotext", "pdftoppm", "tesseract"]) {
     try {
       await exec(
-        binary === "ffmpeg" || binary === "ffprobe"
-          ? resolveMediaTool(binary)
-          : resolveDocumentTool(binary as DocumentTool),
-        [
-          binary === "tesseract"
-            ? "--version"
-            : ["ffprobe", "ffmpeg"].includes(binary)
-              ? "-version"
-              : "-v",
-        ],
+        resolveDocumentTool(binary as DocumentTool),
+        [binary === "tesseract" ? "--version" : "-v"],
         {
           timeout: 10_000,
         },
@@ -46,7 +30,7 @@ async function main() {
       report(
         binary,
         false,
-        "Install Poppler, Tesseract and FFmpeg; see docs/pdf-conversion.md and docs/videos.md",
+        "Install Poppler and Tesseract; see docs/pdf-conversion.md",
       );
     }
   }

@@ -1,6 +1,6 @@
 # MindMitra — Learn, Play, Grow
 
-A full-stack educational application built with Next.js App Router, React, TypeScript, Tailwind, PostgreSQL, Prisma, and Google-only NextAuth authentication. The repository includes a working practice engine, a human-reviewed content pipeline, four brain games, planner, curated videos, private analytics, and administration.
+A full-stack educational application built with Next.js App Router, React, TypeScript, Tailwind, PostgreSQL, Prisma, and Google-only NextAuth authentication. The repository includes a working practice engine, a human-reviewed content pipeline, seven browser games, planner, private analytics, and administration.
 
 **Development release, not ready for unrestricted public registration.** Google OAuth needs your own credentials. No authorized real previous-year question collection has been supplied: the development database intentionally contains **zero PYQs and zero videos**, alongside 52 exam directory entries. Synthetic questions exist only in the isolated automated test database. See [completion status](docs/STATUS.md).
 
@@ -33,15 +33,15 @@ Only `openid email profile` permissions are requested. There is no password logi
 
 ## Administration, community contributions and hosting
 
-**New Content Studio:** administrator accounts land in a separate animated workspace at `/admin`, with PDF/video uploads, private review queues and self-publication after checks. On Windows, `npm.cmd run setup:pdf` checks installed document tools, including Tesseract without a refreshed PATH. See [the studio and update guide](docs/admin-review.md) and [release details](docs/content-studio-update.md).
+**New Content Studio:** administrator accounts land in a separate animated workspace at `/admin`, with PDF uploads, private review queues and self-publication after checks. On Windows, `npm.cmd run setup:pdf` checks installed document tools, including Tesseract without a refreshed PATH. See [the studio and update guide](docs/admin-review.md) and [release details](docs/content-studio-update.md).
 
 See [the owner and launch guide](docs/contributions-and-launch.md) for admin access, user statistics, moderated PDF/JSON contributions, the approval-based leaderboard, Windows updates without Docker, PWA installation, and Vercel/managed PostgreSQL deployment. PDF uploads automatically convert into editable MCQ/MSQ question drafts using text extraction and OCR. Both `dev` and `start` run the persistent worker with the app. Community submissions stay private until an administrator approves and publishes reviewed questions. See [conversion, retry and hosting setup](docs/pdf-conversion.md).
 
-See [automatic MCQ/MSQ conversion and scoring](docs/msq.md). On Windows, use [the FFmpeg setup guide](docs/windows-media-setup.md) if video uploads report missing native tools.
+See [automatic MCQ/MSQ conversion and scoring](docs/msq.md).
 
-## Educational video creation
+## Mind Break replaces videos
 
-Learn Shorts now includes **Create a learning video**: record in the browser or upload MP4/WebM, then submit privately for full educational/content review. Only approved lessons enter the feed. Install FFmpeg/FFprobe on the web server; the Dockerfile includes them. See [recording, moderation and setup](docs/videos.md). Existing external-video approvals are hidden until they pass the new review checklist.
+Paper Ball Toss, Bridge Builder and Paper Football join the four classic games. Includes swipeable rules, practice rounds, pause/restart, accessible controls and a football bot. Games run in the browser. Video pages redirect to games and video APIs are retired; existing video data is preserved. FFmpeg is no longer required for the deployed application. See [Mind Break rules and update details](docs/mind-break.md).
 
 ## Commands
 
@@ -113,7 +113,7 @@ Use **Admin → Contributions / PDF inbox** to review question text and options,
 
 For scanned papers, use the [CBT review workflow](docs/cbt-and-shorts.md), compare the original PDF, correct the text and choose the correct answers before publishing. The supplied GS Series D scan has a checksum-matched 100-question layout profile.
 
-Administration now starts with **Review papers** and **Review videos**, pending counts and visible approval checklists. See [the admin review guide](docs/admin-review.md) for the click-by-click flow and explanations when approval is disabled.
+Administration now starts with **Review papers**, pending counts and visible approval checklists. See [the admin review guide](docs/admin-review.md) for the click-by-click flow and explanations when approval is disabled.
 
 ### PDF-only upload
 
@@ -121,4 +121,4 @@ Choose just the PDF under **Administration → Upload a paper**. Conversion star
 
 ### CBT questions and swipeable Shorts
 
-Review the original PDF and publish ordinary CBT text/options, without required answer-key references. Learn Shorts now supports vertical scrolling, muted autoplay and persistent likes. Video upload omits topic/objective fields and allows 20 videos per user per rolling day. [Guide and required likes migration](docs/cbt-and-shorts.md).
+Review the original PDF and publish ordinary CBT text/options, without required answer-key references. The former video feature has been retired in favour of Mind Break. Historical video migrations are retained to preserve existing databases.

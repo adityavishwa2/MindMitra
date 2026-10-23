@@ -6,8 +6,6 @@ import {
   LayoutDashboard,
   FileUp,
   FileCheck2,
-  Video,
-  Upload,
   BookOpen,
   Users,
   GraduationCap,
@@ -19,8 +17,6 @@ const links = [
   ["/admin", "Overview", LayoutDashboard],
   ["/admin/imports", "Upload paper", FileUp],
   ["/admin/contributions", "Review papers", FileCheck2],
-  ["/admin/videos/upload", "Upload video", Upload],
-  ["/admin/videos", "Review videos", Video],
   ["/admin/questions", "Paper library", BookOpen],
   ["/admin/exams", "Examinations", GraduationCap],
   ["/admin/users", "Accounts", Users],
@@ -54,10 +50,7 @@ export function AdminStudio({
                 (
                   href === "/admin"
                     ? pathname === href
-                    : href === "/admin/videos"
-                      ? pathname.startsWith(href) &&
-                        !pathname.endsWith("/upload")
-                      : pathname.startsWith(href)
+                    : pathname.startsWith(href)
                 )
                   ? "page"
                   : undefined

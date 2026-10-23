@@ -474,7 +474,7 @@ test("four games play; memory match completes", async ({ page }) => {
   }
 });
 
-test("language and favorites persist; private video feed has a finite session", async ({
+test("language and favorites persist; games replace the video feed", async ({
   page,
   context,
 }) => {
@@ -497,44 +497,9 @@ test("language and favorites persist; private video feed has a finite session", 
   await expect(
     page.getByRole("heading", { name: "SYNTHETIC TEST ONLY", exact: true }),
   ).toBeVisible();
-  await login(context, adminToken);
-  expect(
-    (
-      await page.request.post("/api/admin/video", {
-        headers,
-        data: {
-          title: "SYNTHETIC TEST ONLY VIDEO",
-          creator: "Test fixture",
-          youtubeId: "testVideo01",
-          category: "Science",
-          approved: true,
-          safetyReviewed: true,
-        },
-      })
-    ).ok(),
-  ).toBe(true);
-  await login(context, token);
-  await page.route("https://www.youtube-nocookie.com/**", (route) =>
-    route.fulfill({
-      status: 200,
-      body: "Synthetic provider fixture, not real video playback",
-    }),
-  );
-  await page.clock.install();
   await page.goto("/watch");
+  await expect(page).toHaveURL(/\/games$/);
   await expect(
-    page.getByRole("region", { name: "Learn Shorts", exact: true }),
-  ).toHaveAttribute("data-playing", "true");
-
-  await expect(page.locator("iframe")).toHaveAttribute(
-    "src",
-    /youtube-nocookie\.com/,
-  );
-  await page.clock.runFor(301000);
-  await expect(
-    page.getByRole("heading", { name: "Your learning break is complete." }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "Return to study →" }),
+    page.getByRole("heading", { name: "Mind Break", exact: true }),
   ).toBeVisible();
 });

@@ -1,4 +1,5 @@
 import { games } from "@/lib/game-catalog";
+import { MindBreak } from "@/components/mind-break";
 import { GamePlayer } from "@/components/game-player";
 import { Heading } from "@/components/ui";
 import { notFound } from "next/navigation";
@@ -16,11 +17,15 @@ export default async function Page({
   return (
     <div style={{ maxWidth: 740, margin: "auto" }}>
       <Heading
-        eyebrow="BRAIN ARCADE"
+        eyebrow="MIND BREAK"
         title={g.name}
         description={g.description}
       />
-      <GamePlayer game={g.slug} returnTo={returnTo} />
+      {["paper-toss", "bridge-builder", "paper-football"].includes(g.slug) ? (
+        <MindBreak key={g.slug} game={g.slug} returnTo={returnTo} />
+      ) : (
+        <GamePlayer game={g.slug} returnTo={returnTo} />
+      )}
     </div>
   );
 }

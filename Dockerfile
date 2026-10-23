@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 FROM node:24-bookworm-slim
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg poppler-utils tesseract-ocr tesseract-ocr-hin ca-certificates \
+    && apt-get install -y --no-install-recommends poppler-utils tesseract-ocr tesseract-ocr-hin ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app

@@ -200,9 +200,9 @@ export default async function Page() {
           />
           <FeatureCard
             icon={<Play />}
-            title="Stay a little curious"
-            text="A finite collection of curated educational videos."
-            href="/watch"
+            title="Build a bridge. Reset your mind."
+            text="A pocket-sized building challenge with a river to cross."
+            href="/games/bridge-builder"
             color="green"
           />
         </div>

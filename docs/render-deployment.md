@@ -1,7 +1,7 @@
 # Run MindMitra online
 
 The root `render.yaml` provisions a Docker web service and PostgreSQL database.
-The image includes FFmpeg, Poppler and English/Hindi Tesseract. Startup applies
+The image includes Poppler and English/Hindi Tesseract. Startup applies
 database migrations, seeds the exam directory, then runs Next.js and the PDF
 worker together. Uploaded files and the conversion queue are stored in PostgreSQL.
 
@@ -26,8 +26,7 @@ set `NEXTAUTH_URL` to its HTTPS origin and update Google OAuth redirects to matc
 ## Preview limits and production
 
 This Blueprint uses free plans so applying it does not select paid compute.
-Free PostgreSQL expires after 30 days and has 1 GB storage. Video uploads consume
-that storage quickly. Free web services sleep after 15 minutes of inactivity and
+Free PostgreSQL expires after 30 days and has 1 GB storage. Existing stored files still consume database storage. Free web services sleep after 15 minutes of inactivity and
 their limited memory/CPU may be insufficient for scanned-paper OCR. Queued work
 resumes when the service runs again; this is a preview, not reliable production
 hosting. Before opening to students, select an always-on web plan with sufficient
@@ -43,5 +42,5 @@ you need to preserve it; do not overwrite it with the new empty database.
 Wait for Render's deploy to show Live. `/api/health` should return HTTP 200 and
 `{"status":"ok"}`; it returns 503 if the database/schema is unavailable.
 Then verify Google sign-in, an admin upload, PDF review/publish, student practice,
-and video playback. A successful build alone does not verify Google credentials
+and the Mind Break games. A successful build alone does not verify Google credentials
 or the quality of OCR on an individual paper.

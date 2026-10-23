@@ -19,6 +19,15 @@ export async function GET(req: NextRequest, ctx: Ctx) {
   if (!user)
     return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   const { path } = await ctx.params;
+  if (
+    path.some((p) =>
+      ["watch", "video", "video-bookmark", "video-report"].includes(p),
+    )
+  )
+    return NextResponse.json(
+      { error: "Videos have been retired. Visit Mind Break." },
+      { status: 410 },
+    );
   if (path[0] === "report") {
     const sessions = await db.practiceSession.findMany({
       where: { userId: user.id, submittedAt: { not: null } },
@@ -126,6 +135,15 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       return NextResponse.json({ error: "Payload too large" }, { status: 413 });
     const body: unknown = JSON.parse(raw);
     const { path } = await ctx.params;
+    if (
+      path.some((p) =>
+        ["watch", "video", "video-bookmark", "video-report"].includes(p),
+      )
+    )
+      return NextResponse.json(
+        { error: "Videos have been retired. Visit Mind Break." },
+        { status: 410 },
+      );
     const [action, id] = path;
     const minute = Math.floor(Date.now() / 60000);
     const key = `${user.id}:${minute}`;
