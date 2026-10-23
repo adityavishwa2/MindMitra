@@ -6,7 +6,7 @@ A full-stack educational application built with Next.js App Router, React, TypeS
 
 ## Local start
 
-Requirements: Node.js 22 or 24 LTS, npm, and either Docker Desktop/Engine or an existing PostgreSQL 16+ database. The cloud environment currently uses Node 24 and PostgreSQL 17. Optional PDF extraction needs Poppler (`pdftotext`).
+Requirements: Node.js 22 or 24 LTS, npm, and either Docker Desktop/Engine or an existing PostgreSQL 16+ database. The cloud environment currently uses Node 24 and PostgreSQL 17. Automatic PDF conversion needs Poppler (`pdfinfo`, `pdftotext`, `pdftoppm`) and Tesseract OCR on the worker host. See [PDF conversion setup](docs/pdf-conversion.md).
 
 ```sh
 cd MindMitra
@@ -33,24 +33,35 @@ Only `openid email profile` permissions are requested. There is no password logi
 
 ## Administration, community contributions and hosting
 
-See [the owner and launch guide](docs/contributions-and-launch.md) for admin access, user statistics, moderated PDF/JSON contributions, the approval-based leaderboard, Windows updates without Docker, PWA installation, and Vercel/managed PostgreSQL deployment. Community submissions stay private until an administrator approves and publishes verified questions.
+**New Content Studio:** administrator accounts land in a separate animated workspace at `/admin`, with PDF/video uploads, private review queues and self-publication after checks. On Windows, `npm.cmd run setup:pdf` checks installed document tools, including Tesseract without a refreshed PATH. See [the studio and update guide](docs/admin-review.md) and [release details](docs/content-studio-update.md).
+
+See [the owner and launch guide](docs/contributions-and-launch.md) for admin access, user statistics, moderated PDF/JSON contributions, the approval-based leaderboard, Windows updates without Docker, PWA installation, and Vercel/managed PostgreSQL deployment. PDF uploads automatically convert into editable MCQ/MSQ question drafts using text extraction and OCR. Both `dev` and `start` run the persistent worker with the app. Community submissions stay private until an administrator approves and publishes reviewed questions. See [conversion, retry and hosting setup](docs/pdf-conversion.md).
+
+See [automatic MCQ/MSQ conversion and scoring](docs/msq.md). On Windows, use [the FFmpeg setup guide](docs/windows-media-setup.md) if video uploads report missing native tools.
+
+## Educational video creation
+
+Learn Shorts now includes **Create a learning video**: record in the browser or upload MP4/WebM, then submit privately for full educational/content review. Only approved lessons enter the feed. Install FFmpeg/FFprobe on the web server; the Dockerfile includes them. See [recording, moderation and setup](docs/videos.md). Existing external-video approvals are hidden until they pass the new review checklist.
 
 ## Commands
 
-| Command                                                         | Purpose                                                        |
-| --------------------------------------------------------------- | -------------------------------------------------------------- |
-| `npm run dev`                                                   | Development server on port 3000                                |
-| `npm run build`                                                 | Prisma generation and production build                         |
-| `npm run start`                                                 | Production server after a build                                |
-| `npm run typecheck`                                             | Strict TypeScript checks                                       |
-| `npm run lint`                                                  | ESLint and React rules                                         |
-| `npm test`                                                      | Scoring, validation, completion, and game rules                |
-| `npm run test:e2e`                                              | Browser and database tests; separate test database required    |
-| `npm run db:migrate`                                            | Transactional, locked, checksum-checked SQL migrations         |
-| `npm run db:seed`                                               | Repeatable exam directory seed; never creates PYQs             |
-| `npm run admin:grant -- existing-user@example.com`              | Grant an existing signed-in user administrator access          |
-| `npm run import:csv -- metadata.json questions.csv output.json` | Convert validated CSV questions to an import payload           |
-| `npm run import:pdf -- paper.pdf review.json --authorized`      | Extract authorized PDF text for manual review; never publishes |
+| Command                                                         | Purpose                                                                        |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `npm run setup:media -- --install`                              | Install/check FFmpeg and FFprobe on the server (WinGet on Windows)             |
+| `npm run doctor`                                                | Check database, OAuth configuration and PDF/OCR tools without exposing secrets |
+| `npm run worker:pdf`                                            | Run the persistent PDF converter separately when needed                        |
+| `npm run dev`                                                   | Development server on port 3000                                                |
+| `npm run build`                                                 | Prisma generation and production build                                         |
+| `npm run start`                                                 | Production server after a build                                                |
+| `npm run typecheck`                                             | Strict TypeScript checks                                                       |
+| `npm run lint`                                                  | ESLint and React rules                                                         |
+| `npm test`                                                      | Scoring, validation, completion, and game rules                                |
+| `npm run test:e2e`                                              | Browser and database tests; separate test database required                    |
+| `npm run db:migrate`                                            | Transactional, locked, checksum-checked SQL migrations                         |
+| `npm run db:seed`                                               | Repeatable exam directory seed; never creates PYQs                             |
+| `npm run admin:grant -- existing-user@example.com`              | Grant an existing signed-in user administrator access                          |
+| `npm run import:csv -- metadata.json questions.csv output.json` | Convert validated CSV questions to an import payload                           |
+| `npm run import:pdf -- paper.pdf review.json --authorized`      | Extract authorized PDF text for manual review; never publishes                 |
 
 Run administrative scripts only from a trusted machine with authorized database access. No user becomes an administrator automatically.
 
@@ -95,3 +106,19 @@ Use Vercel or a Node-compatible host such as Render plus managed PostgreSQL. Run
 Do not expose the local Docker database to the Internet. Use a PostgreSQL pooler suitable for your host’s connection limits, verified TLS, encrypted backups, and least-privileged application credentials. Hosting, database, backups, asset storage, and bandwidth can incur costs. No paid AI service is required.
 
 Complete the release gates in [STATUS](docs/STATUS.md), including consent/legal review and a live OAuth test, before public launch. This work has not been deployed. See [operations and deployment](docs/operations.md) for migration, backup, restore, and hosting details.
+
+### Review converted questions visually
+
+Use **Admin → Contributions / PDF inbox** to review question text and options, select correct MCQ/MSQ answers, and save a private draft. Approve and publish makes the reviewed paper available in exam preparation. See [the visual review guide](docs/review-editor.md). Incomplete OCR must be corrected against the original PDF before publication.
+
+For scanned papers, use the [CBT review workflow](docs/cbt-and-shorts.md), compare the original PDF, correct the text and choose the correct answers before publishing. The supplied GS Series D scan has a checksum-matched 100-question layout profile.
+
+Administration now starts with **Review papers** and **Review videos**, pending counts and visible approval checklists. See [the admin review guide](docs/admin-review.md) for the click-by-click flow and explanations when approval is disabled.
+
+### PDF-only upload
+
+Choose just the PDF under **Administration → Upload a paper**. Conversion starts automatically; repeat uploads reopen the existing record. Review the suggested exam/year and answers, then approve to add it directly to examination PYQ. Unknown exams use the Uploaded PYQ collection. [Full workflow and duplicate handling](docs/pdf-only-upload.md).
+
+### CBT questions and swipeable Shorts
+
+Review the original PDF and publish ordinary CBT text/options, without required answer-key references. Learn Shorts now supports vertical scrolling, muted autoplay and persistent likes. Video upload omits topic/objective fields and allows 20 videos per user per rolling day. [Guide and required likes migration](docs/cbt-and-shorts.md).

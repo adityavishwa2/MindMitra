@@ -54,4 +54,4 @@ The PDF command requires an explicit authorization flag, validates the PDF signa
 
 CSV uses a header row: `number,text,type,options,subject,topic,language,sourcePage,answer,keyStatus,keyReference,explanation`. The `options` cell is a JSON array; use normal CSV quoting. Keep question arrays out of the metadata file; conversion supplies them and runs the same server schema. A successful conversion still requires admin source comparison and publication.
 
-Cloud document storage, browser PDF upload, OCR jobs, and comprehensive historical inventory collection remain future work. Do not bypass CAPTCHAs, authorization, or reuse restrictions. If permission is absent, link to the official publication instead of copying it.
+Browser uploads and queued OCR conversion are implemented; see [automatic PDF conversion](pdf-conversion.md). Cloud object storage, diagram assets and comprehensive historical inventory collection remain future work. Do not bypass CAPTCHAs, authorization, or reuse restrictions. If permission is absent, link to the official publication instead of copying it.

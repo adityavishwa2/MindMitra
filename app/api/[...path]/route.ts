@@ -1,3 +1,5 @@
+import { needsCbtText } from "@/lib/cbt";
+import { validRequestOrigin, ORIGIN_ERROR } from "@/lib/request-origin";
 import { importPaper } from "@/lib/paper-import";
 import { toCsv } from "@/lib/csv";
 import { NextRequest, NextResponse } from "next/server";
@@ -108,15 +110,8 @@ export async function GET(req: NextRequest, ctx: Ctx) {
 }
 export async function POST(req: NextRequest, ctx: Ctx) {
   try {
-    const origin = req.headers.get("origin");
-    if (
-      !origin ||
-      origin !== new URL(process.env.NEXTAUTH_URL ?? req.url).origin
-    )
-      return NextResponse.json(
-        { error: "Invalid request origin" },
-        { status: 403 },
-      );
+    if (!validRequestOrigin(req))
+      return NextResponse.json({ error: ORIGIN_ERROR }, { status: 403 });
     const user = await currentUser();
     if (!user)
       return NextResponse.json({ error: "Sign in required" }, { status: 401 });
@@ -304,7 +299,11 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       const d = z
         .object({
           questionId: z.string(),
-          selected: z.number().int().min(0).max(7).nullable(),
+          selected: z.number().int().min(0).max(7).nullable().default(null),
+          selectedOptions: z
+            .array(z.number().int().min(0).max(7))
+            .max(8)
+            .default([]),
           reviewed: z.boolean(),
           current: z.number().int().nonnegative(),
           text: z.string().max(20000).optional(),
@@ -326,10 +325,26 @@ export async function POST(req: NextRequest, ctx: Ctx) {
           )
             throw new Error("Time is up. Submit your paper.");
           const q = s.questions.find((q) => q.questionId === d.questionId);
+          if (!q || d.current >= s.questions.length)
+            throw new Error("Invalid answer");
+          const snapshot = q.snapshot as { type: string; options: string[] };
           if (
-            !q ||
-            d.current >= s.questions.length ||
-            (d.selected !== null && d.selected >= q.question.options.length)
+            new Set(d.selectedOptions).size !== d.selectedOptions.length ||
+            d.selectedOptions.some((i) => i >= snapshot.options.length)
+          )
+            throw new Error("Invalid multi-select answer");
+          if (snapshot.type !== "DESCRIPTIVE" && d.text?.trim())
+            throw new Error(
+              "Only descriptive questions accept written responses",
+            );
+          if (snapshot.type === "MSQ") {
+            if (d.selected !== null)
+              throw new Error("MSQs require selectedOptions");
+          } else if (
+            d.selectedOptions.length ||
+            (d.selected !== null &&
+              (snapshot.type === "DESCRIPTIVE" ||
+                d.selected >= snapshot.options.length))
           )
             throw new Error("Invalid answer");
           await tx.studentAnswer.upsert({
@@ -340,11 +355,13 @@ export async function POST(req: NextRequest, ctx: Ctx) {
               sessionId: id,
               questionId: d.questionId,
               selected: d.selected,
+              selectedOptions: d.selectedOptions,
               reviewed: d.reviewed,
               text: d.text,
             },
             update: {
               selected: d.selected,
+              selectedOptions: d.selectedOptions,
               reviewed: d.reviewed,
               text: d.text,
             },
@@ -451,9 +468,33 @@ export async function POST(req: NextRequest, ctx: Ctx) {
         .object({ videoId: z.string(), reason: z.string().min(3).max(1000) })
         .parse(body);
       return ok(
-        await db.videoReport.create({ data: { ...d, userId: user.id } }),
+        await db.$transaction(async (tx) => {
+          const video = await tx.video.findFirst({
+            where: { id: d.videoId, approved: true },
+          });
+          if (!video) throw Error("Video unavailable");
+          const report = await tx.videoReport.create({
+            data: { ...d, userId: user.id },
+          });
+          await tx.video.update({
+            where: { id: d.videoId },
+            data: { approved: false },
+          });
+          await tx.videoSubmission.updateMany({
+            where: { videoId: d.videoId, status: "APPROVED" },
+            data: {
+              status: "PENDING",
+              reviewNote:
+                "Hidden after a content concern. A new full review is required.",
+              reviewerId: null,
+              reviewedAt: null,
+            },
+          });
+          return report;
+        }),
       );
     }
+
     if (action !== "admin" || user.role !== "ADMIN")
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     if (id === "exam") {
@@ -543,6 +584,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
                 topic: q.topic,
                 language: q.language,
                 sourcePage: q.sourcePage,
+                sourceRegions: q.sourceRegions,
                 explanation: q.explanation,
                 verified: false,
               },
@@ -552,6 +594,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
                 questionId: old.id,
                 version: (old.keys[0]?.version ?? 0) + 1,
                 answer: q.answer,
+                correctAnswers: q.correctAnswers,
                 status: q.keyStatus,
                 reference: q.keyReference,
               },
@@ -630,12 +673,29 @@ export async function POST(req: NextRequest, ctx: Ctx) {
             (p.source.permission !== "AUTHORIZED" || !p.questions.length)
           )
             throw new Error("Rights clearance and questions required");
+          if (
+            d.decision === "APPROVE" &&
+            p.questions.some((q) =>
+              needsCbtText({
+                ...q,
+                sourceRegions: Array.isArray(q.sourceRegions)
+                  ? q.sourceRegions
+                  : [],
+              }),
+            )
+          )
+            throw Error(
+              "Complete the CBT question text and options before publication.",
+            );
           await tx.verificationReview.create({
             data: { ...d, reviewerId: user.id },
           });
           await tx.question.updateMany({
             where: { paperId: p.id },
-            data: { verified: d.decision === "APPROVE" },
+            data: {
+              verified: d.decision === "APPROVE",
+              ...(d.decision === "APPROVE" ? { sourceRegions: [] } : {}),
+            },
           });
           await tx.paper.update({
             where: { id: p.id },
@@ -674,21 +734,27 @@ export async function POST(req: NextRequest, ctx: Ctx) {
             "Current affairs",
           ]),
           approved: z.boolean(),
+          safetyReviewed: z.boolean().default(false),
         })
         .parse(body);
+      if (d.approved && !d.safetyReviewed)
+        throw Error(
+          "Confirm full educational and content safety review before approval",
+        );
+      const { safetyReviewed, ...videoData } = d;
       return ok(
         await db.$transaction(async (tx) => {
           const v = await tx.video.upsert({
             where: { youtubeId: d.youtubeId },
-            create: d,
-            update: d,
+            create: videoData,
+            update: videoData,
           });
           await tx.auditLog.create({
             data: {
               actorId: user.id,
               action: "VIDEO_MODERATION",
               targetId: v.id,
-              detail: { approved: d.approved },
+              detail: { approved: d.approved, safetyReviewed },
             },
           });
           return v;

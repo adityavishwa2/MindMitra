@@ -240,17 +240,35 @@ test("import, permission gate, publication, quiz recovery, idempotency, isolatio
   await login(context, adminToken);
   await page.goto("/admin/questions");
   await expect(
-    page.getByRole("heading", { name: /verification desk/ }),
+    page.getByRole("heading", { name: "Existing paper library" }),
+  ).toBeVisible();
+  await page
+    .getByRole("main")
+    .getByText("Update reuse authorization", { exact: true })
+    .click();
+  await expect(
+    page.getByLabel("Permission status", { exact: true }),
+  ).toHaveValue("AUTHORIZED");
+  await page
+    .getByLabel("Permission status", { exact: true })
+    .selectOption("PENDING");
+  await page
+    .getByRole("textbox", { name: /Documented authorization or reason/ })
+    .fill("Synthetic source permission remains under review.");
+  await page
+    .getByRole("button", { name: "Save authorization record", exact: true })
+    .click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Permission record updated" }),
   ).toBeVisible();
   const source = await db.paper.findUniqueOrThrow({ where: { id: paper.id } });
-  await page.request.post("/api/admin/permission", {
-    headers,
-    data: {
-      sourceId: source.sourceId,
-      permission: "PENDING",
-      permissionEvidence: "Synthetic test rights still under review.",
-    },
-  });
+  expect(
+    (
+      await db.sourceDocument.findUniqueOrThrow({
+        where: { id: source.sourceId },
+      })
+    ).permission,
+  ).toBe("PENDING");
   expect(
     (
       await page.request.post("/api/admin/review", {
@@ -263,15 +281,25 @@ test("import, permission gate, publication, quiz recovery, idempotency, isolatio
       })
     ).status(),
   ).toBe(400);
-  await page.request.post("/api/admin/permission", {
-    headers,
-    data: {
-      sourceId: source.sourceId,
-      permission: "AUTHORIZED",
-      permissionEvidence:
-        "Synthetic isolated fixture authorized for this test.",
-    },
-  });
+  await page
+    .getByLabel("Permission status", { exact: true })
+    .selectOption("AUTHORIZED");
+  await page
+    .getByRole("textbox", { name: /Documented authorization or reason/ })
+    .fill("Synthetic isolated fixture authorized for this test.");
+  await page
+    .getByRole("button", { name: "Save authorization record", exact: true })
+    .click();
+  await expect
+    .poll(
+      async () =>
+        (
+          await db.sourceDocument.findUniqueOrThrow({
+            where: { id: source.sourceId },
+          })
+        ).permission,
+    )
+    .toBe("AUTHORIZED");
   r = await page.request.post("/api/admin/review", {
     headers,
     data: {
@@ -480,6 +508,7 @@ test("language and favorites persist; private video feed has a finite session", 
           youtubeId: "testVideo01",
           category: "Science",
           approved: true,
+          safetyReviewed: true,
         },
       })
     ).ok(),
@@ -491,9 +520,12 @@ test("language and favorites persist; private video feed has a finite session", 
       body: "Synthetic provider fixture, not real video playback",
     }),
   );
-  await page.goto("/watch");
   await page.clock.install();
-  await page.getByRole("button", { name: "Play this video" }).click();
+  await page.goto("/watch");
+  await expect(
+    page.getByRole("region", { name: "Learn Shorts", exact: true }),
+  ).toHaveAttribute("data-playing", "true");
+
   await expect(page.locator("iframe")).toHaveAttribute(
     "src",
     /youtube-nocookie\.com/,

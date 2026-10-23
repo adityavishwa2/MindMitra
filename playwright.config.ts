@@ -19,7 +19,7 @@ export default defineConfig({
     url: "http://localhost:3001",
     reuseExistingServer: false,
     env: {
-      NEXTAUTH_URL: "http://localhost:3001",
+      NEXTAUTH_URL: process.env.TEST_AUTH_URL ?? "http://localhost:3001",
       DATABASE_URL: process.env.TEST_DATABASE_URL!,
     },
   },

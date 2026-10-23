@@ -164,6 +164,7 @@ export function AdminVideoForm() {
             youtubeId: d.get("youtubeId"),
             category: d.get("category"),
             approved: d.get("approved") === "on",
+            safetyReviewed: d.get("safetyReviewed") === "on",
           });
           setMessage("Video moderation saved.");
           form.reset();
@@ -208,6 +209,11 @@ export function AdminVideoForm() {
           name="approved"
         />
         <Text value="Reviewed and approved for educational use" />
+      </label>
+      <label className="task-row">
+        <input type="checkbox" name="safetyReviewed" />I watched the entire
+        video and audio: educational only, with no nudity, sexual content,
+        abuse, violence, advertising or external promotions.
       </label>
       <p>
         <Text value="Submit an existing video ID with approval unchecked to remove it from the student feed." />
@@ -320,9 +326,17 @@ export function QuestionCorrection({
     </div>
   );
 }
-export function SourcePermission({ sourceId }: { sourceId: string }) {
-  const [permission, setPermission] = useState("PENDING");
-  const [evidence, setEvidence] = useState("");
+export function SourcePermission({
+  sourceId,
+  initialPermission = "PENDING",
+  initialEvidence = "",
+}: {
+  sourceId: string;
+  initialPermission?: string;
+  initialEvidence?: string;
+}) {
+  const [permission, setPermission] = useState(initialPermission);
+  const [evidence, setEvidence] = useState(initialEvidence);
   const [message, setMessage] = useState("");
   const router = useRouter();
   return (
@@ -334,16 +348,17 @@ export function SourcePermission({ sourceId }: { sourceId: string }) {
         <label>
           <Text value="Permission status" />
           <select
+            aria-label="Permission status"
             value={permission}
             onChange={(e) => setPermission(e.target.value)}
           >
-            <option>
+            <option value="PENDING">
               <Text value="PENDING" />
             </option>
-            <option>
+            <option value="AUTHORIZED">
               <Text value="AUTHORIZED" />
             </option>
-            <option>
+            <option value="DENIED">
               <Text value="DENIED" />
             </option>
           </select>

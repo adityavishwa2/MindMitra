@@ -19,6 +19,7 @@ export default async function Page() {
         id: true,
         title: true,
         status: true,
+        conversionStatus: true,
         reviewNote: true,
         createdAt: true,
         exam: { select: { name: true } },
@@ -41,9 +42,10 @@ export default async function Page() {
       <div className="card section-gap">
         <ContributionForm exams={exams} alias={user.contributorAlias ?? ""} />
       </div>
-      <section className="card section-gap">
+      <details className="card section-gap">
+        <summary>Optional contributor profile</summary>
         <ContributorProfile alias={user.contributorAlias ?? ""} />
-      </section>
+      </details>
       <section className="card section-gap">
         <h2>Your submissions</h2>
         {!items.length && <p>No submissions yet.</p>}
@@ -60,6 +62,9 @@ export default async function Page() {
                 timeZone: "Asia/Kolkata",
               })}
             </p>
+            {c.conversionStatus !== "NOT_REQUIRED" && (
+              <p>PDF conversion: {c.conversionStatus.replaceAll("_", " ")}</p>
+            )}
             {c.reviewNote && <p>Reviewer: {c.reviewNote}</p>}
             <a className="text-link" href={`/api/contributions/${c.id}`}>
               Download your submission

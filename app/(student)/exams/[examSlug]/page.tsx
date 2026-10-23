@@ -1,3 +1,4 @@
+import { SourceLink } from "@/components/source-link";
 import { requireUser } from "@/lib/auth";
 import { Text } from "@/components/translation";
 import { db } from "@/lib/db";
@@ -89,14 +90,9 @@ export default async function Page({
                     <Text value="View paper →" />
                   </Button>
                 ) : (
-                  <a
-                    className="text-link"
-                    href={p.source.url}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
+                  <SourceLink url={p.source.url}>
                     <Text value="Official source ↗" />
-                  </a>
+                  </SourceLink>
                 )}
               </div>
             ))}

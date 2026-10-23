@@ -1,3 +1,4 @@
+import { validRequestOrigin, ORIGIN_ERROR } from "@/lib/request-origin";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
@@ -13,14 +14,8 @@ export async function POST(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ) {
-  if (
-    req.headers.get("origin") !==
-    new URL(process.env.NEXTAUTH_URL ?? req.url).origin
-  )
-    return NextResponse.json(
-      { error: "Invalid request origin" },
-      { status: 403 },
-    );
+  if (!validRequestOrigin(req))
+    return NextResponse.json({ error: ORIGIN_ERROR }, { status: 403 });
   const admin = await currentUser();
   if (!admin)
     return NextResponse.json({ error: "Sign in required" }, { status: 401 });
@@ -72,14 +67,25 @@ export async function POST(
         } else if (c.status !== "PENDING")
           throw Error("This submission has already been reviewed");
         let paperId = c.paperId;
+        let reviewedPayload: Prisma.InputJsonValue | undefined;
+        let reviewedMetadata = {};
         if (d.decision === "APPROVE") {
           const paper = importInput.parse(d.payload ?? c.payload);
           assertPaperMatches(c, paper);
+          reviewedPayload = paper;
+          if (/^urn:sha256:/.test(c.sourceUrl))
+            reviewedMetadata = {
+              examId: paper.examId,
+              year: paper.year,
+              stage: paper.stage,
+              shift: paper.shift,
+              title: paper.title,
+            };
           if (paper.source.permission !== "AUTHORIZED")
             throw Error("Confirm reuse permission before publication");
           if (c.pdf && paper.source.checksum !== c.checksum)
             throw Error("Source checksum must match the uploaded PDF");
-          const p = await importPaper(tx, paper);
+          const p = await importPaper(tx, paper, Boolean(c.pdf));
           paperId = p.id;
           // Existing sources are reused without overwriting their permission decision.
           const source = await tx.sourceDocument.findUniqueOrThrow({
@@ -89,6 +95,16 @@ export async function POST(
             throw Error(
               "The existing source is not authorized; review it in the verification queue first",
             );
+          if (c.pdf)
+            await tx.sourcePdf.upsert({
+              where: { sourceId: p.sourceId },
+              create: {
+                sourceId: p.sourceId,
+                bytes: c.pdf,
+                checksum: c.checksum,
+              },
+              update: {},
+            });
           await tx.question.updateMany({
             where: { paperId: p.id },
             data: { verified: true },
@@ -116,6 +132,14 @@ export async function POST(
                   ? "REVOKED"
                   : "REJECTED",
             paperId,
+            payload: reviewedPayload,
+            ...reviewedMetadata,
+            conversionToken: null,
+            conversionStatus: ["QUEUED", "PROCESSING"].includes(
+              c.conversionStatus,
+            )
+              ? "CANCELLED"
+              : c.conversionStatus,
             reviewNote: d.note,
             reviewerId: admin.id,
             reviewedAt: new Date(),

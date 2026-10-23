@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 type Context = { params: Promise<{ id: string }> };
-export async function GET(_req: NextRequest, ctx: Context) {
+export async function GET(req: NextRequest, ctx: Context) {
   const user = await currentUser();
   if (!user)
     return NextResponse.json({ error: "Sign in required" }, { status: 401 });
@@ -17,7 +17,7 @@ export async function GET(_req: NextRequest, ctx: Context) {
   return new NextResponse(content, {
     headers: {
       "Content-Type": c.pdf ? "application/pdf" : "application/json",
-      "Content-Disposition": `attachment; filename="${c.pdf ? "paper.pdf" : "paper.json"}"`,
+      "Content-Disposition": `${req.nextUrl.searchParams.get("preview") === "1" && user.role === "ADMIN" ? "inline" : "attachment"}; filename="${c.pdf ? "paper.pdf" : "paper.json"}"`,
       "Cache-Control": "private, no-store",
       "X-Content-Type-Options": "nosniff",
       "Content-Security-Policy": "sandbox",

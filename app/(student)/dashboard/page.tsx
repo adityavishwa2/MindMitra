@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { Text } from "@/components/translation";
 import Link from "next/link";
 import { BookOpen, Gamepad2, Play, ArrowUpRight, Sparkles } from "lucide-react";
@@ -8,6 +9,7 @@ import { Button, FeatureCard, EmptyState } from "@/components/ui";
 import { TaskCheck } from "@/components/forms";
 export default async function Page() {
   const u = await requireUser();
+  if (u.role === "ADMIN") redirect("/admin");
   const [a, tasks, last, goal] = await Promise.all([
     analytics(u.id),
     db.studyTask.findMany({

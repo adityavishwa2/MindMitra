@@ -1,7 +1,7 @@
 import "server-only";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import { scoreAnswers } from "@/lib/scoring";
+import { scoreAnswers, gradeAnswer } from "@/lib/scoring";
 export async function submitPractice(userId: string, id: string) {
   return db.$transaction(
     async (tx) => {
@@ -15,14 +15,18 @@ export async function submitPractice(userId: string, id: string) {
       });
       if (!s) throw new Error("NOT_FOUND");
       if (s.submittedAt) return s.result;
-      const answers = new Map(s.answers.map((a) => [a.questionId, a.selected]));
+      const answers = new Map(s.answers.map((a) => [a.questionId, a]));
       const result = scoreAnswers(
         s.questions.map((q) => ({
           questionId: q.questionId,
+          type: (q.snapshot as { type?: string }).type,
           answer: q.answer,
+          correctAnswers: q.correctAnswers,
           keyStatus: q.keyStatus,
-          selected: answers.get(q.questionId) ?? null,
-          subject: q.question.subject,
+          selected: answers.get(q.questionId)?.selected ?? null,
+          selectedOptions: answers.get(q.questionId)?.selectedOptions ?? [],
+          subject:
+            (q.snapshot as { subject?: string }).subject ?? q.question.subject,
         })),
         s.paper.marks,
         s.paper.penalty,
@@ -92,14 +96,22 @@ export async function createPractice(
           old
             .filter((a) =>
               filter.selection === "unsolved"
-                ? a.selected !== null || !!a.text
-                : a.selected !== null &&
-                  a.session.questions.some(
+                ? a.selected !== null ||
+                  a.selectedOptions.length > 0 ||
+                  !!a.text
+                : a.session.questions.some(
                     (q) =>
                       q.questionId === a.questionId &&
-                      q.keyStatus === "VERIFIED" &&
-                      q.answer !== null &&
-                      q.answer !== a.selected,
+                      gradeAnswer({
+                        questionId: q.questionId,
+                        type: (q.snapshot as { type?: string }).type,
+                        answer: q.answer,
+                        correctAnswers: q.correctAnswers,
+                        keyStatus: q.keyStatus,
+                        selected: a.selected,
+                        selectedOptions: a.selectedOptions,
+                        subject: a.questionId,
+                      }) === "INCORRECT",
                   ),
             )
             .map((a) => a.questionId),
@@ -130,12 +142,14 @@ export async function createPractice(
               subject: q.subject,
               topic: q.topic,
               sourcePage: q.sourcePage,
+              sourceRegions: q.sourceRegions,
               explanation: q.explanation,
               keyReference: q.keys[0]?.reference ?? "",
             },
             position: i,
             keyVersion: q.keys[0]?.version,
             answer: q.keys[0]?.answer,
+            correctAnswers: q.keys[0]?.correctAnswers ?? [],
             keyStatus: q.keys[0]?.status ?? "UNAVAILABLE",
           })),
         },

@@ -1,10 +1,13 @@
+import { SourceLink } from "@/components/source-link";
 import { Text } from "@/components/translation";
+import { SourceQuestionImage } from "@/components/source-question-image";
 import { QuestionContent } from "@/components/question-content";
 import type { Question } from "@prisma/client";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { notFound, redirect } from "next/navigation";
 import { Heading, Button } from "@/components/ui";
+import { gradeAnswer, choiceIndexes } from "@/lib/scoring";
 import type { scoreAnswers } from "@/lib/scoring";
 export default async function Page({
   params,
@@ -101,21 +104,49 @@ export default async function Page({
               | "options"
               | "subject"
               | "sourcePage"
+              | "sourceRegions"
               | "explanation"
             > & { keyReference?: string },
             a = s.answers.find((a) => a.questionId === q.id);
+          const grade = gradeAnswer({
+            questionId: q.id,
+            type: q.type,
+            answer: sq.answer,
+            correctAnswers: sq.correctAnswers,
+            keyStatus: sq.keyStatus,
+            selected: a?.selected ?? null,
+            selectedOptions: a?.selectedOptions ?? [],
+            subject: q.subject,
+          });
+          const keyChoices = choiceIndexes(
+            q.type,
+            sq.answer,
+            sq.correctAnswers,
+          );
+          const selectedChoices = choiceIndexes(
+            q.type,
+            a?.selected,
+            a?.selectedOptions,
+          );
           return (
             <details key={q.id} className="card" style={{ marginBottom: 12 }}>
               <summary>
                 {i + 1}. {q.subject} ·{" "}
-                {sq.keyStatus !== "VERIFIED"
-                  ? "Unscored"
-                  : a?.selected == null
-                    ? "Unattempted"
-                    : a.selected === sq.answer
-                      ? "Correct"
-                      : "Needs another look"}
+                {
+                  {
+                    UNSCORED: "Unscored",
+                    UNATTEMPTED: "Unattempted",
+                    CORRECT: "Correct",
+                    INCORRECT: "Needs another look",
+                  }[grade]
+                }
               </summary>
+              {Array.isArray(q.sourceRegions) && q.sourceRegions.length > 0 && (
+                <SourceQuestionImage
+                  number={q.number}
+                  url={`/api/practice/${s.id}/questions/${q.id}/image`}
+                />
+              )}
               <p style={{ whiteSpace: "pre-wrap", color: "var(--ink)" }}>
                 <QuestionContent text={q.text} />
               </p>
@@ -125,13 +156,13 @@ export default async function Page({
                     key={i}
                     style={{
                       color:
-                        i === sq.answer && sq.keyStatus === "VERIFIED"
+                        keyChoices.includes(i) && sq.keyStatus === "VERIFIED"
                           ? "#16866a"
                           : undefined,
                     }}
                   >
                     {o}
-                    {i === a?.selected ? " ← Your answer" : ""}
+                    {selectedChoices.includes(i) ? " ← Your answer" : ""}
                   </li>
                 ))}
               </ol>
@@ -147,13 +178,9 @@ export default async function Page({
                 {sq.keyStatus}
                 <Text value="· version" />
                 {sq.keyVersion ?? "—"}.{" "}
-                {sq.keyStatus === "VERIFIED" && sq.answer !== null
-                  ? `Answer: ${String.fromCharCode(65 + sq.answer)}`
+                {sq.keyStatus === "VERIFIED" && keyChoices.length > 0
+                  ? `Answer: ${keyChoices.map((i) => String.fromCharCode(65 + i)).join(", ")}`
                   : "Excluded from automatic scoring."}
-              </p>
-              <p>
-                Official answer-key reference:{" "}
-                {q.keyReference ?? "See source document"}
               </p>
               {q.explanation && (
                 <p>
@@ -161,15 +188,10 @@ export default async function Page({
                   {q.explanation}
                 </p>
               )}
-              <a
-                className="text-link"
-                href={s.paper.source.url}
-                target="_blank"
-                rel="noreferrer"
-              >
+              <SourceLink url={s.paper.source.url}>
                 <Text value="Source · page" />
                 {q.sourcePage} ↗
-              </a>
+              </SourceLink>
             </details>
           );
         })

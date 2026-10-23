@@ -40,6 +40,9 @@ export default function Home() {
       <main>
         <section className="hero">
           <div className="hero-copy">
+            <p className="founder-trust">
+              ✦ Built by an IITian · Created for curious minds
+            </p>
             <div className="pill">
               <span className="tiny-dot" />
               <Text value="A fresh way to find your focus" />

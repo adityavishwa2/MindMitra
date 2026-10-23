@@ -9,3 +9,6 @@ coverage/
 
 *.dump
 *.log
+
+# Optional locally installed native media tools
+tools/ffmpeg/

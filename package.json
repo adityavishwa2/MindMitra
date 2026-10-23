@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --hostname 0.0.0.0",
+    "dev": "node scripts/serve.mjs dev",
     "build": "prisma generate && next build",
-    "start": "next start --hostname 0.0.0.0",
+    "start": "node scripts/serve.mjs start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
@@ -17,7 +17,11 @@
     "import:pdf": "tsx scripts/imports/pdf-to-review.ts",
     "import:csv": "tsx scripts/imports/csv-to-json.ts",
     "format:check": "prettier --check app components lib scripts tests docs README.md",
-    "setup:local": "tsx scripts/setup-local.ts"
+    "setup:local": "tsx scripts/setup-local.ts",
+    "worker:pdf": "tsx scripts/pdf-worker.ts",
+    "doctor": "tsx scripts/doctor.ts",
+    "setup:pdf": "tsx scripts/setup-pdf.ts",
+    "setup:media": "tsx scripts/setup-media.ts"
   },
   "engines": {
     "node": ">=22"
@@ -47,6 +51,7 @@
     "react-hook-form": "^7.90.0",
     "recharts": "^3.10.1",
     "server-only": "^0.0.1",
+    "sharp": "^0.35.5",
     "tailwind-merge": "^3.7.0",
     "zod": "^4.6.7",
     "zustand": "^5.0.15"

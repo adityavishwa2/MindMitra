@@ -1,3 +1,5 @@
+import "dotenv/config";
+import { resolveDocumentTool } from "../../lib/document-tools";
 import { readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
@@ -12,7 +14,7 @@ async function main() {
   if (bytes.length > 20_000_000 || bytes.subarray(0, 5).toString() !== "%PDF-")
     throw new Error("Expected a PDF under 20 MB");
   const { stdout } = await promisify(execFile)(
-    "pdftotext",
+    resolveDocumentTool("pdftotext"),
     ["-layout", input, "-"],
     { maxBuffer: 10_000_000, timeout: 30000 },
   );

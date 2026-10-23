@@ -1,4 +1,6 @@
 "use client";
+import { SourceQuestionImage } from "@/components/source-question-image";
+import type { SourceRegion } from "@/lib/source-regions";
 import { Text } from "@/components/translation";
 
 import { QuestionContent } from "@/components/question-content";
@@ -7,6 +9,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { pendingDrain, readCachedAnswers } from "@/lib/quiz-sync";
 import { Button } from "./ui";
 type Q = {
   id: string;
@@ -16,8 +19,14 @@ type Q = {
   options: string[];
   subject: string;
   sourcePage: number;
+  sourceRegions?: SourceRegion[];
 };
-type A = { selected: number | null; reviewed: boolean; text?: string };
+type A = {
+  selected: number | null;
+  selectedOptions?: number[];
+  reviewed: boolean;
+  text?: string;
+};
 export function Quiz({
   id,
   questions,
@@ -47,7 +56,7 @@ export function Quiz({
   const [busy, setBusy] = useState(false);
   const [showBreak, setShowBreak] = useState(false);
   const [marks, setMarks] = useState(() => new Set(initialBookmarks));
-  const busyRef = useRef(false);
+  const submitting = useRef(false);
   const positionHydrated = useRef(false);
   const pending = useRef<Record<string, A>>({});
   const q = questions[current];
@@ -55,31 +64,49 @@ export function Quiz({
   const answer = answers[q.id] ?? { selected: null, reviewed: false, text: "" };
   useEffect(() => {
     if (!positionHydrated.current) return;
-    localStorage.setItem(`mm-position-${id}`, String(current));
+    try {
+      localStorage.setItem(`mm-position-${id}`, String(current));
+    } catch {}
     void api(`position/${id}`, { current }).catch(() => {});
   }, [id, current]);
-  const flush = useCallback(async () => {
-    if (busyRef.current) return;
-    busyRef.current = true;
+  const position = useRef(current);
+  useEffect(() => {
+    position.current = current;
+  }, [current]);
+  const drain = useRef<ReturnType<typeof pendingDrain<A>> | null>(null);
+  const persist = useCallback(() => {
     try {
-      for (const [questionId, a] of Object.entries(pending.current)) {
-        await api(`answer/${id}`, { questionId, ...a, current });
-        if (pending.current[questionId] === a)
-          delete pending.current[questionId];
-      }
       localStorage.setItem(`mm-quiz-${id}`, JSON.stringify(pending.current));
+      return true;
+    } catch {
+      return false;
+    }
+  }, [id]);
+  const flush = useCallback(async () => {
+    try {
+      drain.current ??= pendingDrain(
+        () => pending.current,
+        (questionId, a) =>
+          api(`answer/${id}`, { questionId, ...a, current: position.current }),
+      );
+      await drain.current();
+      persist();
       if (!Object.keys(pending.current).length) setMessage("All changes saved");
     } catch {
-      setMessage("Waiting to sync. Your answer is saved on this device.");
-    } finally {
-      busyRef.current = false;
+      setMessage(
+        persist()
+          ? "Waiting to sync. Your answer is saved on this device."
+          : "Waiting to sync. Keep this page open; device storage is unavailable.",
+      );
     }
-  }, [id, current]);
+  }, [id, persist]);
   useEffect(() => {
     try {
-      const cached = JSON.parse(localStorage.getItem(`mm-quiz-${id}`) ?? "{}");
+      const cached = readCachedAnswers(
+        localStorage.getItem(`mm-quiz-${id}`),
+        questions,
+      );
       pending.current = cached;
-      positionHydrated.current = true;
       const storedPosition = localStorage.getItem(`mm-position-${id}`);
       const position = storedPosition === null ? -1 : Number(storedPosition);
       queueMicrotask(() => {
@@ -92,7 +119,8 @@ export function Quiz({
           setCurrent(position);
       });
     } catch {}
-  }, [id, questions.length]);
+    positionHydrated.current = true;
+  }, [id, questions]);
   useEffect(() => {
     void api(`heartbeat/${id}`, { reset: true }).catch(() => {});
     const heartbeat = setInterval(() => {
@@ -129,6 +157,8 @@ export function Quiz({
   }, [flush]);
   const submit = useCallback(
     async (deadline = false) => {
+      if (submitting.current) return;
+      submitting.current = true;
       setBusy(true);
       try {
         if (!deadline) await flush();
@@ -137,11 +167,14 @@ export function Quiz({
             "Reconnect and wait for your answers to sync before submitting.",
           );
         await api(`submit/${id}`, {});
-        localStorage.removeItem(`mm-quiz-${id}`);
-        localStorage.removeItem(`mm-position-${id}`);
+        try {
+          localStorage.removeItem(`mm-quiz-${id}`);
+          localStorage.removeItem(`mm-position-${id}`);
+        } catch {}
         router.push(`/practice/${id}/results`);
       } catch (e) {
         setMessage((e as Error).message);
+        submitting.current = false;
         setBusy(false);
       }
     },
@@ -152,9 +185,10 @@ export function Quiz({
       queueMicrotask(() => void submit(true));
   }, [mode, seconds, durationMinutes, busy, submit]);
   function update(a: A) {
+    if (submitting.current) return;
     setAnswers((v) => ({ ...v, [q.id]: a }));
     pending.current[q.id] = a;
-    localStorage.setItem(`mm-quiz-${id}`, JSON.stringify(pending.current));
+    persist();
     setMessage("Saving…");
     void flush();
   }
@@ -211,8 +245,19 @@ export function Quiz({
               lineHeight: 1.6,
             }}
           >
-            <QuestionContent text={q.text} />
+            {q.sourceRegions?.length ? (
+              `Question ${q.number}`
+            ) : (
+              <QuestionContent text={q.text} />
+            )}
           </h2>
+          {!!q.sourceRegions?.length && (
+            <SourceQuestionImage
+              key={q.id}
+              number={q.number}
+              url={`/api/practice/${id}/questions/${q.id}/image`}
+            />
+          )}
           {q.type === "DESCRIPTIVE" ? (
             <label>
               <Text value="Your response (self-assessed)" />
@@ -223,15 +268,41 @@ export function Quiz({
             </label>
           ) : (
             <div className="question-options">
+              {q.type === "MSQ" && (
+                <p className="notice">
+                  MSQ · Select all correct options. Exact match scoring: no
+                  partial credit.
+                </p>
+              )}
               {q.options.map((option, i) => (
                 <button
                   key={i}
-                  className={`option ${answer.selected === i ? "selected" : ""}`}
-                  aria-pressed={answer.selected === i}
-                  onClick={() => update({ ...answer, selected: i })}
+                  className={`option ${(q.type === "MSQ" ? answer.selectedOptions?.includes(i) : answer.selected === i) ? "selected" : ""}`}
+                  aria-pressed={
+                    q.type === "MSQ"
+                      ? (answer.selectedOptions ?? []).includes(i)
+                      : answer.selected === i
+                  }
+                  onClick={() => {
+                    if (q.type === "MSQ") {
+                      const values = new Set(answer.selectedOptions ?? []);
+                      if (values.has(i)) values.delete(i);
+                      else values.add(i);
+                      update({
+                        ...answer,
+                        selected: null,
+                        selectedOptions: [...values].sort((a, b) => a - b),
+                      });
+                    } else
+                      update({ ...answer, selected: i, selectedOptions: [] });
+                  }}
                 >
                   <span>{String.fromCharCode(65 + i)}</span>
-                  <span>{option}</span>
+                  <span>
+                    {q.sourceRegions?.length
+                      ? `Option ${String.fromCharCode(65 + i)}`
+                      : option}
+                  </span>
                 </button>
               ))}
             </div>
@@ -239,7 +310,14 @@ export function Quiz({
           <div className="row" style={{ flexWrap: "wrap" }}>
             <button
               className="chip"
-              onClick={() => update({ ...answer, selected: null, text: "" })}
+              onClick={() =>
+                update({
+                  ...answer,
+                  selected: null,
+                  selectedOptions: [],
+                  text: "",
+                })
+              }
             >
               <Text value="Clear response" />
             </button>
@@ -325,7 +403,7 @@ export function Quiz({
               <button
                 key={q.id}
                 aria-label={`Go to question ${i + 1}`}
-                className={`${i === current ? "current" : ""} ${answers[q.id]?.selected != null || answers[q.id]?.text ? "answered" : ""} ${answers[q.id]?.reviewed ? "review" : ""}`}
+                className={`${i === current ? "current" : ""} ${answers[q.id]?.selected != null || (answers[q.id]?.selectedOptions?.length ?? 0) > 0 || answers[q.id]?.text ? "answered" : ""} ${answers[q.id]?.reviewed ? "review" : ""}`}
                 onClick={() => {
                   setCurrent(i);
                 }}

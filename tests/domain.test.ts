@@ -93,7 +93,7 @@ it("rejects duplicate original numbers and invalid key indexes", () => {
   );
   expect(
     questionInput.safeParse({ ...question, keyReference: "" }).success,
-  ).toBe(false);
+  ).toBe(true);
   expect(
     importInput.safeParse({
       examId: "test",

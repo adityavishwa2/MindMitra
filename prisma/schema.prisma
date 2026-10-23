@@ -7,6 +7,7 @@ datasource db {
  url = env("DATABASE_URL")
 }
 model User {
+ videoLikes VideoLike[]
  id String @id @default(cuid())
  name String?
  email String? @unique
@@ -23,6 +24,7 @@ model User {
  createdAt DateTime @default(now())
  contributorAlias String? @unique
  contributions Contribution[]
+ videoSubmissions VideoSubmission[]
  accounts Account[]
  sessions Session[]
  practices PracticeSession[]
@@ -79,6 +81,12 @@ model Exam {
  papers Paper[]
  contributions Contribution[]
 }
+model SourcePdf {
+ sourceId String @id
+ source SourceDocument @relation(fields:[sourceId],references:[id],onDelete:Cascade)
+ bytes Bytes
+ checksum String
+}
 model SourceDocument {
  id String @id @default(cuid())
  title String
@@ -86,6 +94,7 @@ model SourceDocument {
  checksum String
  permission String @default("PENDING")
  permissionEvidence String
+ pdfAsset SourcePdf?
  createdAt DateTime @default(now())
  papers Paper[]
  @@unique([url,checksum])
@@ -124,6 +133,7 @@ model Question {
  topic String
  language String @default("en")
  sourcePage Int
+ sourceRegions Json @default("[]")
  verified Boolean @default(false)
  explanation String? @db.Text
  keys AnswerKey[]
@@ -138,6 +148,7 @@ model AnswerKey {
  question Question @relation(fields:[questionId],references:[id],onDelete:Cascade)
  version Int
  answer Int?
+ correctAnswers Int[] @default([])
  status String
  reference String
  createdAt DateTime @default(now())
@@ -178,6 +189,7 @@ model SessionQuestion {
  position Int
  keyVersion Int?
  answer Int?
+ correctAnswers Int[] @default([])
  keyStatus String
  snapshot Json
  @@unique([sessionId,questionId])
@@ -190,6 +202,7 @@ model StudentAnswer {
  questionId String
  question Question @relation(fields:[questionId],references:[id])
  selected Int?
+ selectedOptions Int[] @default([])
  reviewed Boolean @default(false)
  text String? @db.Text
  @@unique([sessionId,questionId])
@@ -221,10 +234,12 @@ model GameSession {
  @@index([userId,game])
 }
 model Video {
+ likes VideoLike[]
  id String @id @default(cuid())
  title String
  creator String
- youtubeId String @unique
+ youtubeId String? @unique
+ submission VideoSubmission?
  category String
  approved Boolean @default(false)
  watches WatchSession[]
@@ -281,6 +296,12 @@ model RateBucket {
 }
 
 model Contribution {
+ conversionStatus String @default("NOT_REQUIRED")
+ conversionAttempts Int @default(0)
+ conversionToken String?
+ conversionStartedAt DateTime?
+ conversionError String?
+ conversionResult Json?
  adminUpload Boolean @default(false)
  id String @id @default(cuid())
  userId String
@@ -304,6 +325,41 @@ model Contribution {
  paperId String? @unique
  paper Paper? @relation(fields:[paperId],references:[id])
  createdAt DateTime @default(now())
+ @@index([conversionStatus,createdAt])
  @@index([status,createdAt])
  @@index([userId,createdAt])
+}
+
+model VideoSubmission {
+ id String @id @default(cuid())
+ userId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ title String
+ creator String
+ category String
+ learningObjective String @db.Text
+ fileName String
+ mimeType String
+ bytes Bytes
+ checksum String @unique
+ durationSeconds Float
+ status String @default("PENDING")
+ reviewNote String?
+ reviewerId String?
+ reviewedAt DateTime?
+ videoId String? @unique
+ video Video? @relation(fields:[videoId],references:[id])
+ createdAt DateTime @default(now())
+ @@index([userId,createdAt])
+ @@index([status,createdAt])
+}
+
+model VideoLike {
+ userId String
+ videoId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ video Video @relation(fields:[videoId],references:[id],onDelete:Cascade)
+ createdAt DateTime @default(now())
+ @@id([userId,videoId])
+ @@index([videoId])
 }

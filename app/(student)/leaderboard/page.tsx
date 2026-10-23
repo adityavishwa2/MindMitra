@@ -11,7 +11,7 @@ export default async function Page() {
       status: "APPROVED",
       adminUpload: false,
       paper: { status: "PUBLISHED" },
-      user: { contributorAlias: { not: null } },
+      user: { role: { not: "ADMIN" }, contributorAlias: { not: null } },
     },
     _count: { id: true },
     orderBy: [{ _count: { id: "desc" } }, { userId: "asc" }],

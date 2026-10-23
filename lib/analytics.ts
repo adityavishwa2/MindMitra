@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "./db";
-import { paperComplete } from "./scoring";
+import { paperComplete, gradeAnswer } from "./scoring";
 export async function analytics(userId: string) {
   const sessions = await db.practiceSession.findMany({
     where: { userId, submittedAt: { not: null } },
@@ -30,23 +30,31 @@ export async function analytics(userId: string) {
     });
     const day = (daily[date] ??= { date, questions: 0, correct: 0 });
     for (const a of s.answers) {
-      if (a.selected === null && !a.text) continue;
+      if (a.selected === null && !a.selectedOptions.length && !a.text) continue;
       unique.add(a.questionId);
       attempts++;
       day.questions++;
       const q = s.questions.find((q) => q.questionId === a.questionId);
-      if (
-        q?.keyStatus === "VERIFIED" &&
-        q.answer !== null &&
-        a.selected !== null
-      ) {
-        const sub = (subjects[a.question.subject] ??= {
-          subject: a.question.subject,
+      if (!q) continue;
+      const snapshot = q.snapshot as { type?: string; subject?: string };
+      const result = gradeAnswer({
+        questionId: a.questionId,
+        type: snapshot.type,
+        answer: q.answer,
+        correctAnswers: q.correctAnswers,
+        keyStatus: q.keyStatus,
+        selected: a.selected,
+        selectedOptions: a.selectedOptions,
+        subject: snapshot.subject ?? a.question.subject,
+      });
+      if (result === "CORRECT" || result === "INCORRECT") {
+        const sub = (subjects[snapshot.subject ?? a.question.subject] ??= {
+          subject: snapshot.subject ?? a.question.subject,
           correct: 0,
           attempted: 0,
         });
         sub.attempted++;
-        if (a.selected === q.answer) {
+        if (result === "CORRECT") {
           correct++;
           day.correct++;
           sub.correct++;

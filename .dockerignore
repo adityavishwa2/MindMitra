@@ -1,0 +1,14 @@
+.git
+node_modules
+.next
+.env
+.env.*
+!.env.example
+work
+output
+test-results
+playwright-report
+coverage
+*.log
+*.dump
+*.zip

@@ -1,10 +1,34 @@
 export type Scorable = {
   questionId: string;
+  type?: string;
   answer: number | null;
+  correctAnswers?: number[];
   keyStatus: string;
   selected: number | null;
+  selectedOptions?: number[];
   subject: string;
 };
+export function choiceIndexes(
+  type: string | undefined,
+  single: number | null | undefined,
+  multiple: number[] = [],
+) {
+  return type === "MSQ" ? multiple : single == null ? [] : [single];
+}
+export function gradeAnswer(
+  r: Scorable,
+): "CORRECT" | "INCORRECT" | "UNATTEMPTED" | "UNSCORED" {
+  const keys = choiceIndexes(r.type, r.answer, r.correctAnswers);
+  const selected = choiceIndexes(r.type, r.selected, r.selectedOptions);
+  if (r.type === "DESCRIPTIVE" || r.keyStatus !== "VERIFIED" || keys.length < 1)
+    return "UNSCORED";
+  if (!selected.length) return "UNATTEMPTED";
+  return selected.length === keys.length &&
+    new Set(selected).size === selected.length &&
+    selected.every((i) => keys.includes(i))
+    ? "CORRECT"
+    : "INCORRECT";
+}
 export function scoreAnswers(rows: Scorable[], marks: number, penalty: number) {
   let correct = 0,
     incorrect = 0,
@@ -12,17 +36,18 @@ export function scoreAnswers(rows: Scorable[], marks: number, penalty: number) {
     unscored = 0;
   const subjects: Record<string, { correct: number; attempted: number }> = {};
   for (const r of rows) {
-    if (r.keyStatus !== "VERIFIED" || r.answer === null) {
+    const result = gradeAnswer(r);
+    if (result === "UNSCORED") {
       unscored++;
       continue;
     }
-    if (r.selected === null) {
+    if (result === "UNATTEMPTED") {
       unattempted++;
       continue;
     }
     const s = (subjects[r.subject] ??= { correct: 0, attempted: 0 });
     s.attempted++;
-    if (r.answer === r.selected) {
+    if (result === "CORRECT") {
       correct++;
       s.correct++;
     } else incorrect++;

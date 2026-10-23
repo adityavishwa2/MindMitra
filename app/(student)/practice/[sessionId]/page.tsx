@@ -1,3 +1,4 @@
+import { sourceRegionsInput } from "@/lib/source-regions";
 import type { Question } from "@prisma/client";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -27,6 +28,7 @@ export default async function Page({
               options: true,
               subject: true,
               sourcePage: true,
+              sourceRegions: true,
             },
           },
         },
@@ -71,6 +73,7 @@ export default async function Page({
             | "options"
             | "subject"
             | "sourcePage"
+            | "sourceRegions"
           >;
           return {
             id: v.id,
@@ -80,6 +83,7 @@ export default async function Page({
             options: v.options,
             subject: v.subject,
             sourcePage: v.sourcePage,
+            sourceRegions: sourceRegionsInput.parse(v.sourceRegions ?? []),
           };
         })}
         initialCurrent={s.current}
@@ -91,7 +95,12 @@ export default async function Page({
         initialAnswers={Object.fromEntries(
           s.answers.map((a) => [
             a.questionId,
-            { selected: a.selected, reviewed: a.reviewed, text: a.text ?? "" },
+            {
+              selected: a.selected,
+              selectedOptions: a.selectedOptions,
+              reviewed: a.reviewed,
+              text: a.text ?? "",
+            },
           ]),
         )}
       />
